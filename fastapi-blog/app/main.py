@@ -1,39 +1,46 @@
 from contextlib import asynccontextmanager
+import logging
 from fastapi import FastAPI
 
 from app.core.exceptions import register_exception_handlers
+from app.core.logging import setup_logging
 from app.db.init_db import init_db
-from app.middleware.auth_middleware import register_middleware
+from app.middleware.auth_middleware import register_auth_middleware
 from app.routers import register_routers
+from pyngrok import ngrok
+from app.core.logging import logging_middleware
 
 
-def create_app() -> FastAPI:
-    """
-    Create and configure FastAPI application
-    """
-
-    @asynccontextmanager
-    async def lifespan(app: FastAPI):
-        init_db()
-
-        yield
-
-    app = FastAPI(
-        title="FastAPI Blog",
-        description="Practice project using FastAPI",
-        version="1.0.0",
-    )
-
-    # Middleware
-    register_middleware(app)
-
-    # Routers
-    register_routers(app)
-
-    # Exception handlers
-    register_exception_handlers(app)
-
-    return app
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    public_url = ngrok.connect(8000, bind_tls=True).public_url
+    logging.info(f"Public URL: {public_url}")
+    yield
 
 
-app = create_app()
+app = FastAPI(
+    title="FastAPI Blog",
+    description="Practice project using FastAPI",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+# Setup logging
+setup_logging()
+
+
+@app.middleware("http")
+async def log_requests(request, call_next):
+    return await logging_middleware(request, call_next)
+
+
+# Middleware
+register_auth_middleware(app)
+# register_middleware(app)
+
+# Routers
+register_routers(app)
+
+# Exception handlers
+register_exception_handlers(app)

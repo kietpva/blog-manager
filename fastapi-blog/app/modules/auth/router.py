@@ -1,0 +1,60 @@
+import logging
+import enum
+from fastapi import APIRouter, Depends, Request, Response, status
+from svix.webhooks import Webhook, WebhookVerificationError
+from app.core.config import settings
+from app.dependencies.users import get_user_service
+from app.modules.users.service import UserService
+from app.modules.users.schema import UserCreate
+from app.utils.helpers import extract_email, extract_first_name, extract_last_name
+
+
+class ClerkEvent(str, enum.Enum):
+    user_created = "user.created"
+
+
+secret = settings.CLERK_WEBHOOK_SECRET
+
+router = APIRouter(prefix="/auth", tags=["Auth"])
+
+
+@router.post("/webhooks/clerk", status_code=status.HTTP_204_NO_CONTENT)
+async def clerk_webhook(
+    request: Request,
+    response: Response,
+    service: UserService = Depends(get_user_service),
+):
+    """
+    Clerk webhook handler
+    """
+    payload = await request.body()
+    headers = request.headers
+
+    try:
+        wh = Webhook(settings.CLERK_WEBHOOK_SECRET)
+        event = wh.verify(payload, headers)
+    except WebhookVerificationError as e:
+        logging.info("❌ Webhook verify failed:", str(e))
+        response.status_code = status.HTTP_400_BAD_REQUEST
+        return
+
+    # Handle event
+    event_type = event.get("type")
+    data = event.get("data", {})
+
+    auth_id = data.get("id")
+    if not auth_id:
+        return
+
+    email = extract_email(data)
+    first_name = extract_first_name(data)
+    last_name = extract_last_name(data)
+
+    if event_type == ClerkEvent.user_created:
+        service.create(
+            UserCreate(
+                auth_id=auth_id, email=email, first_name=first_name, last_name=last_name
+            )
+        )
+
+    return

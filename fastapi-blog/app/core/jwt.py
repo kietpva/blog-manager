@@ -33,9 +33,9 @@ def get_jwks() -> dict:
 
     except Exception:
         raise AppError(
-            code=ErrorCode.SERVICE_UNAVAILABLE,
+            code=ErrorCode.service_unavailable,
             message="Unable to fetch JWKS",
-            status_code=StatusCode.SERVICE_UNAVAILABLE,
+            status_code=StatusCode.service_unavailable,
         )
 
 
@@ -47,18 +47,18 @@ def get_public_key(token: str) -> dict:
         header = jwt.get_unverified_header(token)
     except JWTError:
         raise AppError(
-            code=ErrorCode.UNAUTHORIZED,
+            code=ErrorCode.unauthorized,
             message="Invalid token header",
-            status_code=StatusCode.UNAUTHORIZED,
+            status_code=StatusCode.unauthorized,
         )
 
     kid = header.get("kid")
 
     if not kid:
         raise AppError(
-            code=ErrorCode.UNAUTHORIZED,
+            code=ErrorCode.unauthorized,
             message="Token missing kid",
-            status_code=StatusCode.UNAUTHORIZED,
+            status_code=StatusCode.unauthorized,
         )
 
     jwks = get_jwks()
@@ -67,9 +67,9 @@ def get_public_key(token: str) -> dict:
         if key["kid"] == kid:
             return key
     raise AppError(
-        code=ErrorCode.UNAUTHORIZED,
+        code=ErrorCode.unauthorized,
         message="Public key not found",
-        status_code=StatusCode.UNAUTHORIZED,
+        status_code=StatusCode.unauthorized,
     )
 
 
@@ -92,7 +92,7 @@ def verify_clerk_token(token: str) -> dict:
 
     except JWTError:
         raise AppError(
-            code=ErrorCode.UNAUTHORIZED,
+            code=ErrorCode.unauthorized,
             message="Invalid or expired token",
-            status_code=StatusCode.UNAUTHORIZED,
+            status_code=StatusCode.unauthorized,
         )
