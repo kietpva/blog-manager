@@ -1,9 +1,14 @@
-from fastapi import APIRouter, Depends
-from app.dependencies.auth import get_current_user
+from fastapi import APIRouter
+from app.dependencies.rbac import Admin, Authenticated
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
-@router.get("/me")
-def get_me(user=Depends(get_current_user)):
-    return {"data": user}
+@router.get("/me", dependencies=[Authenticated])
+def get_me():
+    return {"data": "user"}
+
+
+@router.get("/", dependencies=[Admin])
+def get_users():
+    return {"data": "Only admin can see this"}
