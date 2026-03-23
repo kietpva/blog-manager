@@ -3,7 +3,7 @@ from fastapi import Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.core.exceptions import AppError, ErrorCode, StatusCode
 from app.db.session import SessionLocal
-from app.modules.users.model import User
+from app.modules.users.models import User
 
 security = HTTPBearer()
 

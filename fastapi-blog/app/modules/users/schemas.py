@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from datetime import datetime
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr
 
-from app.modules.users.model import UserRole
+from app.modules.users.models import UserRole
 
 
 class UserBase(BaseModel):
@@ -28,9 +29,9 @@ class AdminUserUpdate(UserUpdate):
 
 
 class UserBaseRead(UserBase):
-    model_config = ConfigDict(from_attributes=True)
+    id: UUID
 
-    id: str
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserRead(UserBaseRead):

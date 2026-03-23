@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 
-from app.modules.health.router import router as health_router
-from app.modules.users.router import router as user_router
-from app.modules.auth.router import router as auth_router
+from app.modules.health.routers import router as health_router
+from app.modules.users.routers import router as user_router
+from app.modules.auth.routers import router as auth_router
 
 
 def register_routers(app: FastAPI) -> None:

@@ -6,7 +6,7 @@ from fastapi import Depends
 
 from app.core.exceptions import AppError, ErrorCode, StatusCode
 from app.dependencies.auth import get_current_active_user
-from app.modules.users.model import User, UserRole
+from app.modules.users.models import User, UserRole
 
 
 def require_roles(*allowed_roles: UserRole) -> Callable[[User], User]:
