@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from enum import IntEnum, StrEnum
 from typing import Any
 
 from fastapi import FastAPI, HTTPException, Request
@@ -6,11 +7,54 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 
+class StatusCode(IntEnum):
+    ok = 200
+    created = 201
+    no_content = 204
+    bad_request = 400
+    unauthorized = 401
+    forbidden = 403
+    not_found = 404
+    method_not_allowed = 405
+    internal_server_error = 500
+    service_unavailable = 503
+
+
+class ErrorCode(StrEnum):
+    bad_request = "bad_request"
+    unauthorized = "unauthorized"
+    forbidden = "forbidden"
+    not_found = "not_found"
+    internal_server_error = "internal_server_error"
+
+    post_not_found = "post_not_found"
+    user_not_found = "user_not_found"
+    inactivate_user = "inactivate_user"
+
+
 @dataclass(slots=True)
 class AppError(Exception):
     code: str
     message: str
     status_code: int = 400
+
+
+class NotFoundException(AppError):
+    """
+    Exception raised when a requested resource is not found.
+    """
+
+    def __init__(
+        self,
+        *,
+        message: str = "Resource not found",
+        code: str = ErrorCode.not_found,
+    ):
+        super().__init__(
+            code=code,
+            message=message,
+            status_code=StatusCode.not_found,
+        )
 
 
 def as_error_response(*, code: str, message: str) -> dict[str, Any]:
@@ -57,30 +101,6 @@ def http_exception_to_error(exc: HTTPException) -> tuple[int, dict[str, Any]]:
     )
 
 
-class StatusCode:
-    ok = 200
-    created = 201
-    bad_request = 400
-    unauthorized = 401
-    forbidden = 403
-    not_found = 404
-    method_not_allowed = 405
-    internal_server_error = 500
-    service_unavailable = 503
-
-
-class ErrorCode:
-    bad_request = "bad_request"
-    unauthorized = "unauthorized"
-    forbidden = "forbidden"
-    not_found = "not_found"
-    internal_server_error = "internal_server_error"
-
-    post_not_found = "post_not_found"
-    user_not_found = "user_not_found"
-    inactivate_user = "inactivate_user"
-
-
 def register_exception_handlers(app: FastAPI) -> None:
     """
     Register custom exception handlers for FastAPI application.
@@ -103,4 +123,14 @@ def register_exception_handlers(app: FastAPI) -> None:
         return JSONResponse(
             status_code=422,
             content=as_error_response(code="validation_error", message=str(exc)),
+        )
+
+    @app.exception_handler(Exception)
+    async def global_exception_handler(_: Request, exc: Exception):
+        return JSONResponse(
+            status_code=StatusCode.internal_server_error,
+            content=as_error_response(
+                code=ErrorCode.internal_server_error,
+                message="Internal server error",
+            ),
         )
