@@ -4,8 +4,8 @@ from fastapi import APIRouter, Depends, Request, Response, status
 from svix.webhooks import Webhook, WebhookVerificationError
 from app.core.config import settings
 from app.dependencies.users import get_user_service
-from app.modules.users.service import UserService
-from app.modules.users.schema import UserCreate
+from app.modules.users.services import UserService
+from app.modules.users.schemas import UserCreate
 from app.utils.helpers import extract_email, extract_first_name, extract_last_name
 
 
