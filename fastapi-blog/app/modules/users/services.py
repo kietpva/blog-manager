@@ -1,7 +1,7 @@
 from pydantic import BaseModel
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import IntegrityError
 
-from app.core.exceptions import AppError, ErrorCode, StatusCode
+from app.core.exceptions import AppError, ErrorCode, NotFoundException, StatusCode
 from app.decorators.permissions import check_permission
 from app.modules.users.models import User, UserRole
 from app.modules.users.repositories import UserRepository
@@ -19,13 +19,25 @@ class UserService:
 
     def __init__(self, repo: UserRepository) -> None:
         """
-        Initialize the UserService with a UserRepository.
+        Initialize the UserService with a UserRepository instance.
+
+        Args:
+            repo (UserRepository): The repository used for user database operations.
         """
         self.repo = repo
 
     def create(self, payload: UserCreate) -> User:
         """
-        Create a new user if one does not already exist with the given auth_id.
+        Create a new user in the system.
+
+        Args:
+            payload (UserCreate): The data required to create a new user.
+
+        Returns:
+            User: The newly created user or the existing user if found.
+
+        Raises:
+            AppError: If the user already exists (based on the auth_id).
         """
         existing_user = self.repo.get_by_auth_id(payload.auth_id)
 
@@ -49,53 +61,55 @@ class UserService:
                 status_code=StatusCode.bad_request,
             )
 
-        except SQLAlchemyError:
-            raise AppError(
-                code=ErrorCode.internal_server_error,
-                message="Failed to create user",
-                status_code=StatusCode.internal_server_error,
-            )
-
     def get_user(self, user_id: str) -> User:
         """
-        Retrieve the user associated with the given auth_id.
+        Retrieve a user by their ID.
+
+        Args:
+            user_id (str): The unique identifier of the user.
+
+        Returns:
+            User: The user object if found.
+
+        Raises:
+            NotFoundException: If no user exists with the provided ID.
         """
         user = self.repo.get_by_user_id(user_id)
 
         if not user:
-            raise AppError(
-                code=ErrorCode.user_not_found,
-                message="User not found",
-                status_code=StatusCode.not_found,
-            )
+            raise NotFoundException(message="User not found")
 
         return user
 
     def get_list(self) -> list[User]:
         """
         Retrieve a list of all users.
+
+        Returns:
+            list[User]: A list of all user objects.
         """
         return self.repo.get_list()
 
     def _update_user(self, *, user_id: str, payload: BaseModel) -> User:
+        """
+        Internal method to update a user's data.
+
+        Args:
+            user_id (str): The user's ID.
+            payload (BaseModel): The update data (can be UserUpdate or AdminUserUpdate).
+
+        Returns:
+            User: The updated user object.
+
+        Raises:
+            NotFoundException: If the user does not exist.
+        """
         user = self.repo.get_by_user_id(user_id)
 
         if not user:
-            raise AppError(
-                code=ErrorCode.user_not_found,
-                message="User not found",
-                status_code=StatusCode.not_found,
-            )
+            raise NotFoundException(message="User not found")
 
-        try:
-            return self.repo.update(user, payload)
-
-        except SQLAlchemyError:
-            raise AppError(
-                code=ErrorCode.internal_server_error,
-                message="Failed to update user",
-                status_code=StatusCode.internal_server_error,
-            )
+        return self.repo.update(user, payload)
 
     def admin_update(
         self,
@@ -105,7 +119,18 @@ class UserService:
         current_user: User,
     ) -> User:
         """
-        Admin-only: Update a user's information as an administrator.
+        Update another user's profile information as an admin.
+
+        Args:
+            payload (AdminUserUpdate): The admin user's update data.
+            user_id (str): The target user's ID.
+            current_user (User): The currently authenticated admin user.
+
+        Returns:
+            User: The updated user object.
+
+        Raises:
+            AppError: If the current user is not an admin.
         """
         if current_user.role != UserRole.admin:
             raise AppError(
@@ -123,6 +148,20 @@ class UserService:
         user_id: str,
         current_user: User,
     ) -> User:
+        """
+        Update the current user's own profile information.
+
+        Args:
+            payload (UserUpdate): The user's update data.
+            user_id (str): The target user's ID.
+            current_user (User): The currently authenticated user.
+
+        Returns:
+            User: The updated user object.
+
+        Raises:
+            AppError: If the current user does not have permission to update this user.
+        """
         check_permission(current_user=current_user, owner_id=user_id)
 
         return self._update_user(user_id=user_id, payload=payload)
