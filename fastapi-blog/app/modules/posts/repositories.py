@@ -1,12 +1,17 @@
 from sqlalchemy.orm import Session
 from uuid import UUID
+from sqlalchemy.orm import selectinload
 from app.modules.posts.models import Post
+from app.modules.categories.models import Category
+from app.db.repositories import BaseRepository
 
 
-class PostRepository:
+class PostRepository(BaseRepository[Post, UUID]):
     """
     Repository for handling CRUD operations for Post entities.
     """
+
+    model = Post
 
     def __init__(self, db: Session):
         """
@@ -15,22 +20,7 @@ class PostRepository:
         Args:
             db (Session): The SQLAlchemy database session.
         """
-        self.db = db
-
-    def create(self, post: Post) -> Post:
-        """
-        Add a new post to the database.
-
-        Args:
-            post (Post): The Post instance to be added.
-
-        Returns:
-            Post: The newly inserted and refreshed Post instance.
-        """
-        self.db.add(post)
-        self.db.commit()
-        self.db.refresh(post)
-        return post
+        super().__init__(db)
 
     def get_by_id(self, post_id: UUID) -> Post | None:
         """
@@ -42,7 +32,12 @@ class PostRepository:
         Returns:
             Post | None: The Post instance if found, otherwise None.
         """
-        return self.db.query(Post).filter(Post.id == post_id).one_or_none()
+        return (
+            self.db.query(Post)
+            .options(selectinload(Post.categories))
+            .filter(Post.id == post_id)
+            .one_or_none()
+        )
 
     def get_posts(self):
         """
@@ -51,7 +46,23 @@ class PostRepository:
         Returns:
             list[Post]: A list of all Post instances.
         """
-        return self.db.query(Post).all()
+        return self.db.query(Post).options(selectinload(Post.categories)).all()
+
+    def get_categories_by_ids(self, category_ids: list[UUID]) -> list[Category]:
+        """
+        Retrieve categories by a list of category IDs.
+
+        Args:
+            category_ids (list[UUID]): A list of category UUIDs to retrieve.
+
+        Returns:
+            list[Category]: A list of Category instances matching the provided IDs.
+                            Returns an empty list if no IDs are provided.
+        """
+        if not category_ids:
+            return []
+
+        return self.db.query(Category).filter(Category.id.in_(category_ids)).all()
 
     def update(self, post: Post) -> Post:
         """
@@ -63,9 +74,7 @@ class PostRepository:
         Returns:
             Post: The updated and refreshed Post instance.
         """
-        self.db.commit()
-        self.db.refresh(post)
-        return post
+        return super().update(post)
 
     def delete(self, post: Post):
         """
@@ -77,5 +86,4 @@ class PostRepository:
         Returns:
             None
         """
-        self.db.delete(post)
-        self.db.commit()
+        super().delete(post)
