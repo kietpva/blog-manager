@@ -9,19 +9,14 @@ import uuid
 Base = declarative_base()
 
 
-class BaseModel:
+class BaseTimestampModel:
     """
-    Base mixin for all models
-    - id (UUID)
-    - created_at
-    - updated_at
-    """
+    Base mixin for all models providing automatic timestamp fields.
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
-        primary_key=True,
-        default=uuid.uuid4,
-    )
+    Attributes:
+        created_at (datetime): The timestamp when the record was created.
+        updated_at (datetime): The timestamp when the record was last updated.
+    """
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -34,4 +29,21 @@ class BaseModel:
         server_default=func.now(),
         onupdate=func.now(),
         nullable=False,
+    )
+
+
+class BaseModel(BaseTimestampModel):
+    """
+    Base model mixin providing a UUID primary key and timestamps.
+
+    Attributes:
+        id (uuid.UUID): The unique primary key identifier for the model.
+        created_at (datetime): The timestamp when the record was created (from BaseTimestampModel).
+        updated_at (datetime): The timestamp when the record was last updated (from BaseTimestampModel).
+    """
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
     )

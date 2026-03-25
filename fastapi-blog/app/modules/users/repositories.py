@@ -1,9 +1,12 @@
 from sqlalchemy.orm import Session
 from app.modules.users.models import User
 from pydantic import BaseModel
+from app.db.repositories import BaseRepository
 
 
-class UserRepository:
+class UserRepository(BaseRepository[User, str]):
+    model = User
+
     def __init__(self, db: Session):
         """
         Initialize the UserRepository with a SQLAlchemy database session.
@@ -11,22 +14,7 @@ class UserRepository:
         Args:
             db (Session): The SQLAlchemy database session instance.
         """
-        self.db = db
-
-    def create(self, user: User) -> User:
-        """
-        Add a new user to the database.
-
-        Args:
-            user (User): The user instance to be added.
-
-        Returns:
-            User: The newly added user, refreshed from the database.
-        """
-        self.db.add(user)
-        self.db.commit()
-        self.db.refresh(user)
-        return user
+        super().__init__(db)
 
     def get_by_auth_id(self, auth_id: str) -> User | None:
         """
@@ -59,7 +47,7 @@ class UserRepository:
         Returns:
             list[User]: A list of all user instances.
         """
-        return self.db.query(User).all()
+        return super().get_list()
 
     def update(self, user: User, payload: BaseModel) -> User:
         """
@@ -77,9 +65,7 @@ class UserRepository:
             if hasattr(user, key):
                 setattr(user, key, value)
 
-        self.db.commit()
-        self.db.refresh(user)
-        return user
+        return super().update(user)
 
     def delete(self, user: User):
         """
@@ -88,5 +74,4 @@ class UserRepository:
         Args:
             user (User): The user instance to delete.
         """
-        self.db.delete(user)
-        self.db.commit()
+        super().delete(user)

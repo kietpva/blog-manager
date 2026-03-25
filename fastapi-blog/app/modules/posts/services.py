@@ -36,10 +36,16 @@ class PostService:
         Returns:
             Post: The newly created post instance.
         """
+        categories = self.repo.get_categories_by_ids(payload.category_ids)
+        if len(categories) != len(set(payload.category_ids)):
+            raise NotFoundException(message="One or more categories not found")
+
         post = Post(
-            title=payload.title,
-            content=payload.content,
+            # title=payload.title,
+            # content=payload.content,
+            **payload.model_dump(exclude={"category_ids"}),
             author_id=author_id,
+            categories=categories,
         )
 
         return self.repo.create(post)
@@ -74,18 +80,24 @@ class PostService:
 
     def update_post(self, post_id: UUID, payload: PostUpdate, current_user):
         """
-        Update a post's details after checking permissions.
+        Update an existing post's details.
+
+        This method updates a post with the provided data after verifying that the
+        current user has permission to perform the operation. If `category_ids` are
+        provided in the update payload, validates all referenced categories exist
+        before applying changes.
 
         Args:
-            post_id (UUID): The ID of the post to update.
-            payload (PostUpdate): The update data for the post.
-            current_user: The user attempting the update.
+            post_id (UUID): The unique identifier of the post to update.
+            payload (PostUpdate): The update data for the post (fields to update).
+            current_user: The user attempting to update the post.
 
         Returns:
-            Post: The updated post instance.
+            Post: The updated Post instance.
 
         Raises:
             AppError: If the user does not have permission to update the post.
+            NotFoundException: If the post or any category is not found.
         """
 
         post = self.get_post(post_id)
@@ -93,6 +105,14 @@ class PostService:
         check_permission(current_user, post.author_id)
 
         data = payload.model_dump(exclude_unset=True)
+        category_ids = data.pop("category_ids", None)
+
+        if category_ids is not None:
+            categories = self.repo.get_categories_by_ids(category_ids)
+            if len(categories) != len(set(category_ids)):
+                raise NotFoundException(message="One or more categories not found")
+            post.categories = categories
+
         for key, value in data.items():
             if hasattr(post, key):
                 setattr(post, key, value)
