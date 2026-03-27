@@ -1,20 +1,12 @@
-from sqlalchemy.orm import Session
+from __future__ import annotations
+
 from app.modules.users.models import User
-from pydantic import BaseModel
 from app.db.repositories import BaseRepository
+from app.utils.pagination import PaginationInfo
 
 
 class UserRepository(BaseRepository[User, str]):
     model = User
-
-    def __init__(self, db: Session):
-        """
-        Initialize the UserRepository with a SQLAlchemy database session.
-
-        Args:
-            db (Session): The SQLAlchemy database session instance.
-        """
-        super().__init__(db)
 
     def get_by_auth_id(self, auth_id: str) -> User | None:
         """
@@ -28,50 +20,15 @@ class UserRepository(BaseRepository[User, str]):
         """
         return self.db.query(User).filter(User.auth_id == auth_id).one_or_none()
 
-    def get_by_user_id(self, user_id: str) -> User | None:
+    def list(self, limit: int, offset: int) -> tuple[PaginationInfo, list[User]]:
         """
-        Retrieve a user by their user ID.
-
-        Args:
-            user_id (str): The unique user ID.
+        Retrieve a paginated list of users.
 
         Returns:
-            User | None: The user if found, otherwise None.
+            tuple[PaginationInfo, list[User]]: (pagination, items)
         """
-        return self.db.query(User).filter(User.id == user_id).one_or_none()
-
-    def get_list(self) -> list[User]:
-        """
-        Retrieve a list of all users from the database.
-
-        Returns:
-            list[User]: A list of all user instances.
-        """
-        return super().get_list()
-
-    def update(self, user: User, payload: BaseModel) -> User:
-        """
-        Update the given user with values from the payload.
-
-        Args:
-            user (User): The user instance to update.
-            payload (BaseModel): The update data (Pydantic model) with new field values.
-
-        Returns:
-            User: The updated user instance.
-        """
-        data = payload.model_dump(exclude_unset=True)
-        for key, value in data.items():
-            if hasattr(user, key):
-                setattr(user, key, value)
-
-        return super().update(user)
-
-    def delete(self, user: User):
-        """
-        Delete the specified user from the database.
-
-        Args:
-            user (User): The user instance to delete.
-        """
-        super().delete(user)
+        return super().list(
+            limit,
+            offset,
+            order_by=User.created_at.desc(),
+        )

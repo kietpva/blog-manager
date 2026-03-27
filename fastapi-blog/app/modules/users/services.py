@@ -5,7 +5,13 @@ from app.core.exceptions import AppError, ErrorCode, NotFoundException, StatusCo
 from app.decorators.permissions import check_permission
 from app.modules.users.models import User, UserRole
 from app.modules.users.repositories import UserRepository
-from app.modules.users.schemas import UserCreate, UserUpdate, AdminUserUpdate
+from app.modules.users.schemas import (
+    UserCreate,
+    UserUpdate,
+    AdminUserUpdate,
+)
+from app.utils.helpers import apply_partial_update
+from app.utils.pagination import PaginationInfo
 
 
 class UserService:
@@ -34,10 +40,10 @@ class UserService:
             payload (UserCreate): The data required to create a new user.
 
         Returns:
-            User: The newly created user or the existing user if found.
+            User: The created or already-existing user.
 
         Raises:
-            AppError: If the user already exists (based on the auth_id).
+            AppError: If attempting to create a duplicate user.
         """
         existing_user = self.repo.get_by_auth_id(payload.auth_id)
 
@@ -61,7 +67,7 @@ class UserService:
                 status_code=StatusCode.bad_request,
             )
 
-    def get_user(self, user_id: str) -> User:
+    def get_by_id(self, user_id: str) -> User:
         """
         Retrieve a user by their ID.
 
@@ -72,46 +78,53 @@ class UserService:
             User: The user object if found.
 
         Raises:
-            NotFoundException: If no user exists with the provided ID.
+            NotFoundException: If no such user exists.
         """
-        user = self.repo.get_by_user_id(user_id)
+        user = self.repo.get_by_id(user_id)
 
         if not user:
             raise NotFoundException(message="User not found")
 
         return user
 
-    def get_list(self) -> list[User]:
+    def list(self, limit: int, offset: int) -> tuple[PaginationInfo, list[User]]:
         """
-        Retrieve a list of all users.
-
-        Returns:
-            list[User]: A list of all user objects.
-        """
-        return self.repo.get_list()
-
-    def _update_user(self, *, user_id: str, payload: BaseModel) -> User:
-        """
-        Internal method to update a user's data.
+        List users with pagination support.
 
         Args:
-            user_id (str): The user's ID.
-            payload (BaseModel): The update data (can be UserUpdate or AdminUserUpdate).
+            limit (int): Maximum users to return.
+            offset (int): Number of records to skip.
 
         Returns:
-            User: The updated user object.
+            tuple[PaginationInfo, list[User]]: Pagination metadata and user list.
+        """
+
+        return self.repo.list(limit, offset)
+
+    def _partial_update_user(self, *, user_id: str, payload: BaseModel) -> User:
+        """
+        Internal helper to partially update user fields.
+
+        Args:
+            user_id (str): The ID of the user to update.
+            payload (BaseModel): Update payload (UserUpdate or AdminUserUpdate).
+
+        Returns:
+            User: Updated user object.
 
         Raises:
-            NotFoundException: If the user does not exist.
+            NotFoundException: If the user is not found.
         """
-        user = self.repo.get_by_user_id(user_id)
+        user = self.repo.get_by_id(user_id)
 
         if not user:
             raise NotFoundException(message="User not found")
 
-        return self.repo.update(user, payload)
+        apply_partial_update(instance=user, data=payload.model_dump(exclude_unset=True))
 
-    def admin_update(
+        return self.repo.partial_update(user)
+
+    def admin_partial_update(
         self,
         *,
         payload: AdminUserUpdate,
@@ -119,18 +132,20 @@ class UserService:
         current_user: User,
     ) -> User:
         """
-        Update another user's profile information as an admin.
+        Partially update another user's profile as an admin.
+
+        Only admins may use this operation.
 
         Args:
-            payload (AdminUserUpdate): The admin user's update data.
-            user_id (str): The target user's ID.
-            current_user (User): The currently authenticated admin user.
+            payload (AdminUserUpdate): Fields to update (admin-level).
+            user_id (str): Target user ID.
+            current_user (User): Authenticated admin user.
 
         Returns:
-            User: The updated user object.
+            User: Updated user object.
 
         Raises:
-            AppError: If the current user is not an admin.
+            AppError: If current user is not an admin.
         """
         if current_user.role != UserRole.admin:
             raise AppError(
@@ -139,9 +154,9 @@ class UserService:
                 status_code=StatusCode.forbidden,
             )
 
-        return self._update_user(user_id=user_id, payload=payload)
+        return self._partial_update_user(user_id=user_id, payload=payload)
 
-    def update(
+    def partial_update(
         self,
         *,
         payload: UserUpdate,
@@ -149,19 +164,22 @@ class UserService:
         current_user: User,
     ) -> User:
         """
-        Update the current user's own profile information.
+        Partially update a user's own profile.
+
+        Users may only update their own record. Ownership validation is enforced
+        by check_permission.
 
         Args:
-            payload (UserUpdate): The user's update data.
-            user_id (str): The target user's ID.
-            current_user (User): The currently authenticated user.
+            payload (UserUpdate): Fields to update.
+            user_id (str): The user record to modify.
+            current_user (User): Authenticated user attempting the update.
 
         Returns:
-            User: The updated user object.
+            User: Updated user object.
 
         Raises:
-            AppError: If the current user does not have permission to update this user.
+            AppError: If the user does not have permission to update this record.
         """
         check_permission(current_user=current_user, owner_id=user_id)
 
-        return self._update_user(user_id=user_id, payload=payload)
+        return self._partial_update_user(user_id=user_id, payload=payload)

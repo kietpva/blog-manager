@@ -1,13 +1,14 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from uuid import UUID
 
-from app.core.constants import ResponseData
+from app.core.constants import PaginationResponse, ResponseData
 from app.core.exceptions import StatusCode
 from app.dependencies.posts import get_post_service
 from app.dependencies.rbac import Authenticated
 from app.modules.posts.services import PostService
 from app.modules.posts.schemas import PostCreate, PostUpdate, PostResponse
 from app.dependencies.auth import get_current_active_user
+from app.utils.pagination import MAX_ITEMS_PER_PAGE, Meta
 
 router = APIRouter(prefix="/posts", tags=["Posts"])
 
@@ -17,7 +18,7 @@ router = APIRouter(prefix="/posts", tags=["Posts"])
     response_model=ResponseData[PostResponse],
     dependencies=[Authenticated],
 )
-def create_post(
+def create(
     payload: PostCreate,
     current_user=Depends(get_current_active_user),
     service: PostService = Depends(get_post_service),
@@ -33,8 +34,8 @@ def create_post(
     Returns:
         ResponseData[PostResponse]: The created post wrapped in a response model.
     """
-    post = service.create_post(payload, current_user.id)
-    return ResponseData[PostResponse](data=post)
+    data = service.create(payload, current_user.id)
+    return ResponseData[PostResponse](data=data)
 
 
 @router.get(
@@ -42,7 +43,7 @@ def create_post(
     response_model=ResponseData[PostResponse],
     dependencies=[Authenticated],
 )
-def get_post(
+def get_by_id(
     post_id: UUID,
     service: PostService = Depends(get_post_service),
 ):
@@ -56,27 +57,38 @@ def get_post(
     Returns:
         ResponseData[PostResponse]: The specified post wrapped in a response model.
     """
-    post = service.get_post(post_id)
-    return ResponseData[PostResponse](data=post)
+    data = service.get_by_id(post_id)
+    return ResponseData[PostResponse](data=data)
 
 
 @router.get(
     "",
-    response_model=ResponseData[list[PostResponse]],
+    response_model=PaginationResponse[list[PostResponse]],
     dependencies=[Authenticated],
 )
-def get_posts(service: PostService = Depends(get_post_service)):
+def list(
+    limit: int = Query(10, ge=1, le=MAX_ITEMS_PER_PAGE),
+    offset: int = Query(0, ge=0),
+    service: PostService = Depends(get_post_service),
+):
     """
     Retrieve a list of all posts.
 
     Args:
-        service (PostService): The post service instance (injected via dependency).
+        limit (int): Maximum number of posts to return (default: 10).
+        offset (int): Number of posts to skip (default: 0).
+        service (PostService): Injected PostService instance.
 
     Returns:
-        ResponseData[list[PostResponse]]: A list of all posts wrapped in a response model.
+        PaginationResponse[list[PostResponse]]: Paginated post list and pagination info.
     """
-    posts = service.get_posts()
-    return ResponseData[list[PostResponse]](data=posts)
+
+    pagination, items = service.list(limit, offset)
+
+    return PaginationResponse[list[PostResponse]](
+        data=items,
+        meta=Meta(pagination=pagination),
+    )
 
 
 @router.patch(
@@ -84,7 +96,7 @@ def get_posts(service: PostService = Depends(get_post_service)):
     response_model=ResponseData[PostResponse],
     dependencies=[Authenticated],
 )
-def update_post(
+def partial_update(
     post_id: UUID,
     payload: PostUpdate,
     current_user=Depends(get_current_active_user),
@@ -102,8 +114,8 @@ def update_post(
     Returns:
         ResponseData[PostResponse]: The updated post wrapped in a response model.
     """
-    post = service.update_post(post_id, payload, current_user)
-    return ResponseData[PostResponse](data=post)
+    data = service.partial_update(post_id, payload, current_user)
+    return ResponseData[PostResponse](data=data)
 
 
 @router.delete(
@@ -111,7 +123,7 @@ def update_post(
     dependencies=[Authenticated],
     status_code=StatusCode.no_content,
 )
-def delete_post(
+def delete(
     post_id: UUID,
     current_user=Depends(get_current_active_user),
     service: PostService = Depends(get_post_service),
@@ -127,7 +139,7 @@ def delete_post(
     Returns:
         None
     """
-    service.delete_post(post_id, current_user)
+    service.delete(post_id, current_user)
     return
 
 
