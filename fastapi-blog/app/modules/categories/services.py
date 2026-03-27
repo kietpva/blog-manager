@@ -1,7 +1,11 @@
 from app.modules.categories.models import Category
 from app.modules.categories.repositories import CategoryRepository
-from app.modules.categories.schemas import CategoryCreate, CategoryUpdate
+from app.modules.categories.schemas import (
+    CategoryCreate,
+    CategoryUpdate,
+)
 from app.core.exceptions import AppError, ErrorCode, NotFoundException, StatusCode
+from app.utils.helpers import apply_partial_update
 
 
 class CategoryService:
@@ -21,7 +25,7 @@ class CategoryService:
         """
         self.repo = repo
 
-    def create_category(self, data: CategoryCreate):
+    def create(self, data: CategoryCreate) -> Category:
         """
         Create a new category.
 
@@ -40,18 +44,19 @@ class CategoryService:
             )
 
         category = Category(name=data.name, description=data.description)
+
         return self.repo.create(category)
 
-    def get_categories(self):
+    def list(self) -> list[Category]:
         """
         Retrieve all categories.
 
         Returns:
             A list of all category objects.
         """
-        return self.repo.get_all()
+        return self.repo.list()
 
-    def get_category(self, category_id):
+    def get_by_id(self, category_id) -> Category:
         """
         Retrieve a category by its ID.
 
@@ -67,9 +72,10 @@ class CategoryService:
         category = self.repo.get_by_id(category_id)
         if not category:
             raise NotFoundException("Category not found")
+
         return category
 
-    def update_category(self, category_id, data: CategoryUpdate):
+    def partial_update(self, category_id: str, data: CategoryUpdate) -> Category:
         """
         Update an existing category.
 
@@ -80,7 +86,7 @@ class CategoryService:
         Returns:
             The updated category object.
         """
-        category = self.get_category(category_id)
+        category = self.get_by_id(category_id)
         existing = self.repo.get_by_name(data.name)
         if existing and existing.id != category.id:
             raise AppError(
@@ -88,7 +94,12 @@ class CategoryService:
                 message="Category name already exists",
                 status_code=StatusCode.bad_request,
             )
-        return self.repo.update(category, data.name)
+
+        apply_partial_update(
+            instance=category, data=data.model_dump(exclude_unset=True)
+        )
+
+        return self.repo.partial_update(category)
 
     def delete_category(self, category_id):
         """
@@ -97,5 +108,5 @@ class CategoryService:
         Args:
             category_id: The ID of the category to delete.
         """
-        category = self.get_category(category_id)
+        category = self.get_by_id(category_id)
         self.repo.delete(category)

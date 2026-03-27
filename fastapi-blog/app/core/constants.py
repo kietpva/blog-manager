@@ -4,15 +4,32 @@ from typing import Generic, TypeVar
 
 from pydantic import BaseModel
 
+from app.utils.pagination import Meta
+
 
 T = TypeVar("T")
 
 
 class ResponseData(BaseModel, Generic[T]):
     """
-    Represents the response schema for user data.
+    Generic API response wrapper.
 
-    Used in API responses to return user information.
+    Attributes:
+        data (T): The main response data, generic type.
     """
 
     data: T
+
+
+class PaginationResponse(ResponseData):
+    """
+    API response model for paginated results.
+
+    Inherits from ResponseData and adds a meta field containing pagination metadata.
+
+    Attributes:
+        data (T): The main response data, generic type (usually a list of items).
+        meta (Meta): Metadata with pagination information.
+    """
+
+    meta: Meta

@@ -1,5 +1,8 @@
-from typing import Generic, TypeVar
+from __future__ import annotations
+
+from typing import Generic, TypeVar, Any
 from sqlalchemy.orm import Session
+from app.utils.pagination import PaginationInfo, build_pagination
 
 
 ModelType = TypeVar("ModelType")
@@ -43,18 +46,39 @@ class BaseRepository(Generic[ModelType, IdType]):
         Returns:
             ModelType | None: The entity if found, otherwise None.
         """
-        return self.db.query(self.model).filter(self.model.id == entity_id).first()
+        return (
+            self.db.query(self.model).filter(self.model.id == entity_id).one_or_none()
+        )
 
-    def get_list(self) -> list[ModelType]:
+    def list(
+        self,
+        limit: int,
+        offset: int,
+        *,
+        order_by: Any = None,
+        options: list[Any] | None = None,
+    ) -> tuple[PaginationInfo, list[ModelType]]:
         """
-        Retrieve all entities of this type.
+        Retrieve paginated results plus pagination metadata.
 
         Returns:
-            list[ModelType]: A list of all entities.
+            tuple[PaginationInfo, list[ModelType]]: (pagination, items)
         """
-        return self.db.query(self.model).all()
+        base_query = self.db.query(self.model)
+        total = base_query.count()
 
-    def update(self, entity: ModelType) -> ModelType:
+        page_query = self.db.query(self.model)
+        if options:
+            page_query = page_query.options(*options)
+        if order_by is not None:
+            page_query = page_query.order_by(order_by)
+
+        items = page_query.limit(limit).offset(offset).all()
+
+        pagination = build_pagination(total=total, limit=limit, offset=offset)
+        return pagination, items
+
+    def partial_update(self, entity: ModelType) -> ModelType:
         """
         Persist changes made to an existing entity.
 

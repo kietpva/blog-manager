@@ -5,6 +5,8 @@ from app.modules.posts.repositories import PostRepository
 from app.modules.posts.schemas import PostCreate, PostUpdate
 from app.modules.posts.models import Post
 from app.core.exceptions import NotFoundException
+from app.utils.helpers import apply_partial_update
+from app.utils.pagination import PaginationInfo
 
 
 class PostService:
@@ -25,7 +27,7 @@ class PostService:
         """
         self.repo = repo
 
-    def create_post(self, payload: PostCreate, author_id: UUID) -> Post:
+    def create(self, payload: PostCreate, author_id: UUID) -> Post:
         """
         Create a new post with the given payload and author ID.
 
@@ -41,8 +43,6 @@ class PostService:
             raise NotFoundException(message="One or more categories not found")
 
         post = Post(
-            # title=payload.title,
-            # content=payload.content,
             **payload.model_dump(exclude={"category_ids"}),
             author_id=author_id,
             categories=categories,
@@ -50,7 +50,7 @@ class PostService:
 
         return self.repo.create(post)
 
-    def get_post(self, post_id: UUID) -> Post:
+    def get_by_id(self, post_id: UUID) -> Post:
         """
         Retrieve a post by its ID.
 
@@ -69,16 +69,21 @@ class PostService:
             raise NotFoundException(message="Post not found")
         return post
 
-    def get_posts(self):
+    def list(self, limit: int, offset: int) -> tuple[PaginationInfo, list[Post]]:
         """
-        Retrieve all posts.
+        Retrieve a paginated list of posts, including pagination metadata.
+
+        Args:
+            limit (int): Maximum number of posts to return in the response.
+            offset (int): Number of posts to skip before starting to collect the result set.
 
         Returns:
-            List[Post]: A list of all posts.
+            tuple[PaginationInfo, list[Post]]: Pagination metadata and list of Post instances.
         """
-        return self.repo.get_posts()
 
-    def update_post(self, post_id: UUID, payload: PostUpdate, current_user):
+        return self.repo.list(limit, offset)
+
+    def partial_update(self, post_id: UUID, payload: PostUpdate, current_user) -> Post:
         """
         Update an existing post's details.
 
@@ -100,7 +105,7 @@ class PostService:
             NotFoundException: If the post or any category is not found.
         """
 
-        post = self.get_post(post_id)
+        post = self.get_by_id(post_id)
 
         check_permission(current_user, post.author_id)
 
@@ -113,13 +118,11 @@ class PostService:
                 raise NotFoundException(message="One or more categories not found")
             post.categories = categories
 
-        for key, value in data.items():
-            if hasattr(post, key):
-                setattr(post, key, value)
+        apply_partial_update(instance=post, data=data)
 
-        return self.repo.update(post)
+        return self.repo.partial_update(post)
 
-    def delete_post(self, post_id: UUID, current_user):
+    def delete(self, post_id: UUID, current_user):
         """
         Delete a post after checking permissions.
 
@@ -130,7 +133,7 @@ class PostService:
         Raises:
             AppError: If the user does not have permission to delete the post.
         """
-        post = self.get_post(post_id)
+        post = self.get_by_id(post_id)
 
         check_permission(current_user, post.author_id)
 

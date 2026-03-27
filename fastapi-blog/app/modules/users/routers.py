@@ -1,6 +1,5 @@
-from typing import List
 import uuid
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from app.dependencies.rbac import Admin, Authenticated
 from app.dependencies.users import get_user_service
 from app.modules.users.models import User
@@ -11,7 +10,8 @@ from app.modules.users.schemas import (
     UserUpdate,
 )
 from app.modules.users.services import UserService
-from app.core.constants import ResponseData
+from app.core.constants import PaginationResponse, ResponseData
+from app.utils.pagination import MAX_ITEMS_PER_PAGE, Meta
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
@@ -19,26 +19,56 @@ router = APIRouter(prefix="/users", tags=["Users"])
 @router.get(
     "/{user_id}", dependencies=[Authenticated], response_model=ResponseData[UserRead]
 )
-def get_user(
+def get_by_id(
     user_id: uuid.UUID,
     service: UserService = Depends(get_user_service),
 ):
     """
-    Retrieve the currently authenticated user's information
+    Retrieve a user's details by user ID.
+
+    This endpoint fetches and returns information about a specific user. The
+    endpoint requires authentication. If the authenticated user is not an admin,
+    they may only access their own information.
+
+    Args:
+        user_id (uuid.UUID): The UUID of the user to retrieve.
+        service (UserService): Dependency injected user service.
+
+    Returns:
+        ResponseData[UserRead]: The user information, wrapped in a standard response model.
     """
-    user = service.get_user(user_id)
-    return ResponseData[UserRead](data=user)
+    data = service.get_by_id(user_id)
+    return ResponseData[UserRead](data=data)
 
 
-@router.get("", dependencies=[Admin], response_model=ResponseData[List[UserRead]])
-def get_users(
+@router.get(
+    "",
+    dependencies=[Admin],
+    response_model=PaginationResponse[list[UserRead]],
+)
+def list(
+    limit: int = Query(10, ge=1, le=MAX_ITEMS_PER_PAGE),
+    offset: int = Query(0, ge=0),
     service: UserService = Depends(get_user_service),
 ):
     """
-    Retrieve a list of all users (Admin only)
+    Retrieve a paginated list of all users (admin only).
+
+    This endpoint is restricted to admin users and returns users in a paginated format.
+
+    Args:
+        limit (int): Maximum number of users to return.
+        offset (int): Number of records to skip.
+        service (UserService): Dependency injected user service.
+
+    Returns:
+        PaginationResponse[list[UserRead]]: Paginated user list and metadata.
     """
-    users = service.get_list()
-    return ResponseData[List[UserRead]](data=users)
+    pagination, items = service.list(limit=limit, offset=offset)
+    return PaginationResponse[list[UserRead]](
+        data=items,
+        meta=Meta(pagination=pagination),
+    )
 
 
 @router.patch(
@@ -46,17 +76,29 @@ def get_users(
     dependencies=[Authenticated],
     response_model=ResponseData[UserRead],
 )
-def update(
+def partial_update(
     user_id: uuid.UUID,
     user_update: UserUpdate,
     service: UserService = Depends(get_user_service),
     me: User = Authenticated,
 ):
     """
-    Update the current authenticated user's profile information
+    Update the profile details of the currently authenticated user.
+
+    Allows a user to update their own account information. Authorization is required.
+    Non-admin users can only update their own user record.
+
+    Args:
+        user_id (uuid.UUID): The UUID of the user to update (must match authenticated user).
+        user_update (UserUpdate): Partial update payload.
+        service (UserService): Dependency injected user service.
+        me (User): The currently authenticated user.
+
+    Returns:
+        ResponseData[UserRead]: The updated user data.
     """
-    result = service.update(payload=user_update, user_id=user_id, current_user=me)
-    return ResponseData[UserRead](data=result)
+    data = service.partial_update(payload=user_update, user_id=user_id, current_user=me)
+    return ResponseData[UserRead](data=data)
 
 
 @router.patch(
@@ -64,14 +106,27 @@ def update(
     dependencies=[Admin],
     response_model=ResponseData[AdminUserRead],
 )
-def admin_update(
+def admin_partial_update(
     user_id: uuid.UUID,
     user_update: AdminUserUpdate,
     service: UserService = Depends(get_user_service),
     me: User = Authenticated,
 ):
     """
-    Update another user's profile as an admin
+    Update another user's profile as an admin.
+
+    Enables admins to partially update the details of any user. Requires admin privileges.
+
+    Args:
+        user_id (uuid.UUID): The UUID of the user to update.
+        user_update (AdminUserUpdate): Partial update payload supporting admin-level fields.
+        service (UserService): Dependency injected user service.
+        me (User): The currently authenticated admin user.
+
+    Returns:
+        ResponseData[AdminUserRead]: The updated user data, including admin-level fields.
     """
-    result = service.admin_update(payload=user_update, user_id=user_id, current_user=me)
-    return ResponseData[AdminUserRead](data=result)
+    data = service.admin_partial_update(
+        payload=user_update, user_id=user_id, current_user=me
+    )
+    return ResponseData[AdminUserRead](data=data)

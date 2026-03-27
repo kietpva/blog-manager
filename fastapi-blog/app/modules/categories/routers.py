@@ -1,5 +1,3 @@
-# app/modules/categories/router.py
-
 from fastapi import APIRouter, Depends
 from app.core.exceptions import StatusCode
 from app.dependencies.categories import get_category_service
@@ -20,7 +18,7 @@ router = APIRouter(prefix="/categories", tags=["Categories"])
     response_model=ResponseData[CategoryResponse],
     dependencies=[Admin],
 )
-def create_category(
+def create(
     data: CategoryCreate,
     service: CategoryService = Depends(get_category_service),
 ):
@@ -34,8 +32,8 @@ def create_category(
     Returns:
         ResponseData[CategoryResponse]: The created category wrapped in a response model.
     """
-    category = service.create_category(data)
-    return ResponseData[CategoryResponse](data=category)
+    data = service.create(data)
+    return ResponseData[CategoryResponse](data=data)
 
 
 @router.get(
@@ -43,7 +41,7 @@ def create_category(
     response_model=ResponseData[list[CategoryResponse]],
     dependencies=[Authenticated],
 )
-def get_categories(
+def list(
     service: CategoryService = Depends(get_category_service),
 ):
     """
@@ -55,8 +53,8 @@ def get_categories(
     Returns:
         ResponseData[list[CategoryResponse]]: A list of all categories in a response model.
     """
-    categories = service.get_categories()
-    return ResponseData[list[CategoryResponse]](data=categories)
+    data = service.list()
+    return ResponseData[list[CategoryResponse]](data=data)
 
 
 @router.get(
@@ -64,7 +62,7 @@ def get_categories(
     response_model=ResponseData[CategoryResponse],
     dependencies=[Authenticated],
 )
-def get_category(
+def get_by_id(
     category_id: str,
     service: CategoryService = Depends(get_category_service),
 ):
@@ -78,8 +76,8 @@ def get_category(
     Returns:
         ResponseData[CategoryResponse]: The specified category in a response model.
     """
-    category = service.get_category(category_id)
-    return ResponseData[CategoryResponse](data=category)
+    data = service.get_by_id(category_id)
+    return ResponseData[CategoryResponse](data=data)
 
 
 @router.patch(
@@ -87,7 +85,7 @@ def get_category(
     response_model=ResponseData[CategoryResponse],
     dependencies=[Admin],
 )
-def update_category(
+def partial_update(
     category_id: str,
     data: CategoryUpdate,
     service: CategoryService = Depends(get_category_service),
@@ -103,8 +101,8 @@ def update_category(
     Returns:
         ResponseData[CategoryResponse]: The updated category in a response model.
     """
-    category = service.update_category(category_id, data)
-    return ResponseData[CategoryResponse](data=category)
+    result = service.partial_update(category_id, data)
+    return ResponseData[CategoryResponse](data=result)
 
 
 @router.delete(
@@ -127,3 +125,4 @@ def delete_category(
         None
     """
     service.delete_category(category_id)
+    return
