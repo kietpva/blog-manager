@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import APIRouter, Depends, Query
 from uuid import UUID
 
@@ -85,7 +86,7 @@ def list(
 
     pagination, items = service.list(limit, offset)
 
-    return PaginationResponse[list[PostResponse]](
+    return PaginationResponse[List[PostResponse]](
         data=items,
         meta=Meta(pagination=pagination),
     )
@@ -141,8 +142,3 @@ def delete(
     """
     service.delete(post_id, current_user)
     return
-
-
-@router.get("/test-error")
-def test_error():
-    raise Exception("Something went wrong")

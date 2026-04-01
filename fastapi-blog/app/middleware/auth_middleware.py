@@ -1,7 +1,7 @@
 import logging
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from app.core.jwt import verify_clerk_token
+from app.core.jwt import verify_auth_token
 from app.core.exceptions import (
     AppError,
     ErrorCode,
@@ -28,7 +28,7 @@ def register_auth_middleware(app: FastAPI) -> None:
                     )
 
                 token = parts[1]
-                payload = verify_clerk_token(token)
+                payload = verify_auth_token(token)
 
                 clerk_id = payload.get("sub") or payload.get("user_id")
                 if not clerk_id:

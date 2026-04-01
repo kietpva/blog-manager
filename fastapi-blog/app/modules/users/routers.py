@@ -1,3 +1,4 @@
+from typing import List
 import uuid
 from fastapi import APIRouter, Depends, Query
 from app.dependencies.rbac import Admin, Authenticated
@@ -62,10 +63,10 @@ def list(
         service (UserService): Dependency injected user service.
 
     Returns:
-        PaginationResponse[list[UserRead]]: Paginated user list and metadata.
+        PaginationResponse[List[UserRead]]: Paginated user list and metadata.
     """
     pagination, items = service.list(limit=limit, offset=offset)
-    return PaginationResponse[list[UserRead]](
+    return PaginationResponse[List[UserRead]](
         data=items,
         meta=Meta(pagination=pagination),
     )

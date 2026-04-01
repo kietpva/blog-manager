@@ -73,7 +73,7 @@ def get_public_key(token: str) -> dict:
     )
 
 
-def verify_clerk_token(token: str) -> dict:
+def verify_auth_token(token: str) -> dict:
     """
     Verify the provided Clerk JWT token and return its payload.
     """
