@@ -1,3 +1,4 @@
+from typing import List
 from fastapi import APIRouter, Depends
 from app.core.exceptions import StatusCode
 from app.dependencies.categories import get_category_service
@@ -38,7 +39,7 @@ def create(
 
 @router.get(
     "",
-    response_model=ResponseData[list[CategoryResponse]],
+    response_model=ResponseData[List[CategoryResponse]],
     dependencies=[Authenticated],
 )
 def list(
@@ -54,7 +55,7 @@ def list(
         ResponseData[list[CategoryResponse]]: A list of all categories in a response model.
     """
     data = service.list()
-    return ResponseData[list[CategoryResponse]](data=data)
+    return ResponseData[List[CategoryResponse]](data=data)
 
 
 @router.get(

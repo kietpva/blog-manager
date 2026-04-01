@@ -52,9 +52,9 @@ class BaseRepository(Generic[ModelType, IdType]):
 
     def list(
         self,
+        *,
         limit: int,
         offset: int,
-        *,
         order_by: Any = None,
         options: list[Any] | None = None,
     ) -> tuple[PaginationInfo, list[ModelType]]:

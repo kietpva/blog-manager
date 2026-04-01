@@ -71,7 +71,7 @@ class CategoryService:
         """
         category = self.repo.get_by_id(category_id)
         if not category:
-            raise NotFoundException("Category not found")
+            raise NotFoundException(message="Category not found")
 
         return category
 

@@ -26,6 +26,7 @@ class ErrorCode(StrEnum):
     forbidden = "forbidden"
     not_found = "not_found"
     internal_server_error = "internal_server_error"
+    service_unavailable = "service_unavailable"
 
     post_not_found = "post_not_found"
     user_not_found = "user_not_found"
