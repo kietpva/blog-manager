@@ -1,5 +1,5 @@
-from app.modules.categories.models import Category
 from app.db.repositories import BaseRepository
+from app.modules.categories.models import Category
 
 
 class CategoryRepository(BaseRepository[Category, str]):

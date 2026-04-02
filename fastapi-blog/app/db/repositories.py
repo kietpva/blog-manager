@@ -1,9 +1,10 @@
 from __future__ import annotations
 
-from typing import Generic, TypeVar, Any
-from sqlalchemy.orm import Session
-from app.utils.pagination import PaginationInfo, build_pagination
+from typing import Any, Generic, TypeVar
 
+from sqlalchemy.orm import Session
+
+from app.utils.pagination import PaginationInfo, build_pagination
 
 ModelType = TypeVar("ModelType")
 IdType = TypeVar("IdType")
@@ -52,9 +53,9 @@ class BaseRepository(Generic[ModelType, IdType]):
 
     def list(
         self,
-        *,
         limit: int,
         offset: int,
+        *,
         order_by: Any = None,
         options: list[Any] | None = None,
     ) -> tuple[PaginationInfo, list[ModelType]]:

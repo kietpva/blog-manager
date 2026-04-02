@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from unittest.mock import Mock
 
-
 from app.db.repositories import BaseRepository
 from app.utils.pagination import PaginationInfo
 
@@ -95,8 +94,8 @@ def test_list_without_options_or_order_builds_pagination_and_items():
     assert pagination.total == 10
     assert pagination.limit == 2
     assert pagination.offset == 4
-    assert pagination.hasNext is True
-    assert pagination.hasPrev is True
+    assert pagination.has_next is True
+    assert pagination.has_prev is True
     assert result_items == items
 
     assert db.query.call_count == 2

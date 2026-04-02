@@ -1,10 +1,10 @@
+from app.core.exceptions import AppError, ErrorCode, NotFoundError, StatusCode
 from app.modules.categories.models import Category
 from app.modules.categories.repositories import CategoryRepository
 from app.modules.categories.schemas import (
     CategoryCreate,
     CategoryUpdate,
 )
-from app.core.exceptions import AppError, ErrorCode, NotFoundException, StatusCode
 from app.utils.helpers import apply_partial_update
 
 
@@ -38,9 +38,9 @@ class CategoryService:
         existing = self.repo.get_by_name(data.name)
         if existing:
             raise AppError(
-                code=ErrorCode.bad_request,
+                code=ErrorCode.BAD_REQUEST,
                 message="Category name already exists",
-                status_code=StatusCode.bad_request,
+                status_code=StatusCode.BAD_REQUEST,
             )
 
         category = Category(name=data.name, description=data.description)
@@ -71,7 +71,7 @@ class CategoryService:
         """
         category = self.repo.get_by_id(category_id)
         if not category:
-            raise NotFoundException(message="Category not found")
+            raise NotFoundError(message="Category not found")
 
         return category
 
@@ -90,9 +90,9 @@ class CategoryService:
         existing = self.repo.get_by_name(data.name)
         if existing and existing.id != category.id:
             raise AppError(
-                code=ErrorCode.bad_request,
+                code=ErrorCode.BAD_REQUEST,
                 message="Category name already exists",
-                status_code=StatusCode.bad_request,
+                status_code=StatusCode.BAD_REQUEST,
             )
 
         apply_partial_update(

@@ -402,8 +402,8 @@ Total estimated time: 12 working days
       "total": 100,
       "limit": 10,
       "offset": 0,
-      "hasNext": true,
-      "hasPrev": false
+      "has_next": true,
+      "has_prev": false
     }
   }
 }
@@ -517,8 +517,8 @@ GET /users?limit=1\&offset=0
       "total": 20,
       "limit": 1,
       "offset": 0,
-      "hasNext": true,
-      "hasPrev": false
+      "has_next": true,
+      "has_prev": false
     }
   }
 }
@@ -630,8 +630,8 @@ GET /posts?limit=10\&offset=0
       "total": 100,
       "limit": 10,
       "offset": 0,
-      "hasNext": true,
-      "hasPrev": false
+      "has_next": true,
+      "has_prev": false
     }
   }
 }

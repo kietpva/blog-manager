@@ -8,29 +8,29 @@ from fastapi.responses import JSONResponse
 
 
 class StatusCode(IntEnum):
-    ok = 200
-    created = 201
-    no_content = 204
-    bad_request = 400
-    unauthorized = 401
-    forbidden = 403
-    not_found = 404
-    method_not_allowed = 405
-    internal_server_error = 500
-    service_unavailable = 503
+    OK = 200
+    CREATED = 201
+    NO_CONTENT = 204
+    BAD_REQUEST = 400
+    UNAUTHORIZED = 401
+    FORBIDDEN = 403
+    NOT_FOUND = 404
+    METHOD_NOT_ALLOWED = 405
+    INTERNAL_SERVER_ERROR = 500
+    SERVICE_UNAVAILABLE = 503
 
 
 class ErrorCode(StrEnum):
-    bad_request = "bad_request"
-    unauthorized = "unauthorized"
-    forbidden = "forbidden"
-    not_found = "not_found"
-    internal_server_error = "internal_server_error"
-    service_unavailable = "service_unavailable"
+    BAD_REQUEST = "bad_request"
+    UNAUTHORIZED = "unauthorized"
+    FORBIDDEN = "forbidden"
+    NOT_FOUND = "not_found"
+    INTERNAL_SERVER_ERROR = "internal_server_error"
+    SERVICE_UNAVAILABLE = "service_unavailable"
 
-    post_not_found = "post_not_found"
-    user_not_found = "user_not_found"
-    inactivate_user = "inactivate_user"
+    POST_NOT_FOUND = "post_not_found"
+    USER_NOT_FOUND = "user_not_found"
+    INACTIVATE_USER = "inactivate_user"
 
 
 @dataclass(slots=True)
@@ -40,7 +40,7 @@ class AppError(Exception):
     status_code: int = 400
 
 
-class NotFoundException(AppError):
+class NotFoundError(AppError):
     """
     Exception raised when a requested resource is not found.
     """
@@ -49,12 +49,12 @@ class NotFoundException(AppError):
         self,
         *,
         message: str = "Resource not found",
-        code: str = ErrorCode.not_found,
+        code: str = ErrorCode.NOT_FOUND,
     ):
         super().__init__(
             code=code,
             message=message,
-            status_code=StatusCode.not_found,
+            status_code=StatusCode.NOT_FOUND,
         )
 
 
@@ -129,9 +129,9 @@ def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(Exception)
     async def global_exception_handler(_: Request, exc: Exception):
         return JSONResponse(
-            status_code=StatusCode.internal_server_error,
+            status_code=StatusCode.INTERNAL_SERVER_ERROR,
             content=as_error_response(
-                code=ErrorCode.internal_server_error,
+                code=ErrorCode.INTERNAL_SERVER_ERROR,
                 message="Internal server error",
             ),
         )

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from app.modules.users.models import User
 from app.db.repositories import BaseRepository
+from app.modules.users.models import User
 from app.utils.pagination import PaginationInfo
 
 

@@ -20,9 +20,9 @@ def test_get_current_user_raises_unauthorized_when_clerk_id_missing():
     with pytest.raises(AppError) as exc_info:
         get_current_user(request)
 
-    assert exc_info.value.code == ErrorCode.unauthorized
+    assert exc_info.value.code == ErrorCode.UNAUTHORIZED
     assert exc_info.value.message == "Not authenticated"
-    assert exc_info.value.status_code == StatusCode.unauthorized
+    assert exc_info.value.status_code == StatusCode.UNAUTHORIZED
 
 
 def test_get_current_user_raises_user_not_found_when_db_returns_none(
@@ -43,9 +43,9 @@ def test_get_current_user_raises_user_not_found_when_db_returns_none(
     with pytest.raises(AppError) as exc_info:
         auth.get_current_user(request)
 
-    assert exc_info.value.code == ErrorCode.user_not_found
+    assert exc_info.value.code == ErrorCode.USER_NOT_FOUND
     assert exc_info.value.message == "User does not exist"
-    assert exc_info.value.status_code == StatusCode.unauthorized
+    assert exc_info.value.status_code == StatusCode.UNAUTHORIZED
     db.close.assert_called_once_with()
 
 
@@ -89,9 +89,9 @@ def test_get_current_active_user_raises_forbidden_when_user_inactive():
     with pytest.raises(AppError) as exc_info:
         get_current_active_user(inactive_user)
 
-    assert exc_info.value.code == ErrorCode.forbidden
+    assert exc_info.value.code == ErrorCode.FORBIDDEN
     assert exc_info.value.message == "Inactive user"
-    assert exc_info.value.status_code == StatusCode.forbidden
+    assert exc_info.value.status_code == StatusCode.FORBIDDEN
 
 
 def test_get_current_active_user_returns_user_when_active():

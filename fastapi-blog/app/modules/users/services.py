@@ -1,14 +1,14 @@
 from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 
-from app.core.exceptions import AppError, ErrorCode, NotFoundException, StatusCode
+from app.core.exceptions import AppError, ErrorCode, NotFoundError, StatusCode
 from app.decorators.permissions import check_permission
 from app.modules.users.models import User, UserRole
 from app.modules.users.repositories import UserRepository
 from app.modules.users.schemas import (
+    AdminUserUpdate,
     UserCreate,
     UserUpdate,
-    AdminUserUpdate,
 )
 from app.utils.helpers import apply_partial_update
 from app.utils.pagination import PaginationInfo
@@ -62,9 +62,9 @@ class UserService:
 
         except IntegrityError:
             raise AppError(
-                code=ErrorCode.bad_request,
+                code=ErrorCode.BAD_REQUEST,
                 message="User already exists",
-                status_code=StatusCode.bad_request,
+                status_code=StatusCode.BAD_REQUEST,
             )
 
     def get_by_id(self, user_id: str) -> User:
@@ -83,7 +83,7 @@ class UserService:
         user = self.repo.get_by_id(user_id)
 
         if not user:
-            raise NotFoundException(message="User not found")
+            raise NotFoundError(message="User not found")
 
         return user
 
@@ -118,7 +118,7 @@ class UserService:
         user = self.repo.get_by_id(user_id)
 
         if not user:
-            raise NotFoundException(message="User not found")
+            raise NotFoundError(message="User not found")
 
         apply_partial_update(instance=user, data=payload.model_dump(exclude_unset=True))
 
@@ -147,11 +147,11 @@ class UserService:
         Raises:
             AppError: If current user is not an admin.
         """
-        if current_user.role != UserRole.admin:
+        if current_user.role != UserRole.ADMIN:
             raise AppError(
-                code=ErrorCode.forbidden,
+                code=ErrorCode.FORBIDDEN,
                 message="Permission denied",
-                status_code=StatusCode.forbidden,
+                status_code=StatusCode.FORBIDDEN,
             )
 
         return self._partial_update_user(user_id=user_id, payload=payload)

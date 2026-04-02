@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import enum
 
-from sqlalchemy import String
+from sqlalchemy import Boolean, Enum, String
 from sqlalchemy.orm import Mapped, mapped_column
+
 from app.db.base import Base, BaseModel
-from sqlalchemy import Enum, Boolean
 
 
 class UserRole(enum.Enum):
-    admin = "admin"
-    user = "user"
+    ADMIN = "admin"
+    USER = "user"
 
 
 class User(Base, BaseModel):
@@ -40,7 +40,7 @@ class User(Base, BaseModel):
     role: Mapped[UserRole] = mapped_column(
         Enum(UserRole, name="user_role", create_type=False),
         nullable=False,
-        default=UserRole.user,
+        default=UserRole.USER,
     )
     is_active: Mapped[bool] = mapped_column(
         Boolean,

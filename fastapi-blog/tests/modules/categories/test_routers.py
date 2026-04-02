@@ -1,11 +1,11 @@
 from types import SimpleNamespace
-from uuid import uuid4
 from unittest.mock import Mock
+from uuid import uuid4
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from app.core.exceptions import NotFoundException, register_exception_handlers
+from app.core.exceptions import NotFoundError, register_exception_handlers
 from app.dependencies.categories import get_category_service
 from app.dependencies.rbac import Admin, Authenticated
 from app.modules.categories.routers import router
@@ -41,7 +41,7 @@ def _build_client(service_mock: Mock) -> tuple[TestClient, SimpleNamespace]:
     app.include_router(router)
     register_exception_handlers(app)
 
-    me = SimpleNamespace(id=uuid4(), role=UserRole.admin)
+    me = SimpleNamespace(id=uuid4(), role=UserRole.ADMIN)
     app.dependency_overrides[get_category_service] = lambda: service_mock
     app.dependency_overrides[Authenticated.dependency] = lambda: me
     app.dependency_overrides[Admin.dependency] = lambda: me
@@ -128,7 +128,7 @@ def test_get_by_id_returns_404_when_not_found():
     """
     service = Mock()
     category_id = uuid4()
-    service.get_by_id.side_effect = NotFoundException(message="Category not found")
+    service.get_by_id.side_effect = NotFoundError(message="Category not found")
 
     client, _ = _build_client(service)
     response = client.get(f"/categories/{category_id}")

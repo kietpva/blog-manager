@@ -4,7 +4,7 @@ from unittest.mock import Mock
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-from app.core.exceptions import AppError, ErrorCode, NotFoundException, StatusCode
+from app.core.exceptions import AppError, ErrorCode, NotFoundError, StatusCode
 from app.modules.users.models import User, UserRole
 from app.modules.users.repositories import UserRepository
 from app.modules.users.schemas import AdminUserUpdate, UserCreate, UserUpdate
@@ -74,12 +74,14 @@ def make_user(**kwargs) -> User:
         email=kwargs.get("email", "user@example.com"),
         first_name=kwargs.get("first_name", "John"),
         last_name=kwargs.get("last_name", "Doe"),
-        role=kwargs.get("role", UserRole.user),
+        role=kwargs.get("role", UserRole.USER),
         is_active=kwargs.get("is_active", True),
     )
 
 
-def test_create_returns_existing_user(service: UserService, repo: Mock, create_payload: UserCreate):
+def test_create_returns_existing_user(
+    service: UserService, repo: Mock, create_payload: UserCreate
+):
     """
     Test that the service.create() method returns an existing user and does not call repo.create()
     if the user with the given auth_id already exists.
@@ -98,7 +100,9 @@ def test_create_returns_existing_user(service: UserService, repo: Mock, create_p
     repo.create.assert_not_called()
 
 
-def test_create_calls_repo_with_new_user(service: UserService, repo: Mock, create_payload: UserCreate):
+def test_create_calls_repo_with_new_user(
+    service: UserService, repo: Mock, create_payload: UserCreate
+):
     """
     Test that the service.create() method creates a new user by calling repo.create()
     when no user with the given auth_id exists.
@@ -124,8 +128,9 @@ def test_create_raises_bad_request_when_integrity_error(
     service: UserService, repo: Mock, create_payload: UserCreate
 ):
     """
-    Test that service.create() raises an AppError with the appropriate code, message, 
-    and status_code when the repository layer raises an IntegrityError (e.g., due to a unique constraint violation).
+    Test that service.create() raises an AppError with the appropriate code, message,
+    and status_code when the repository layer raises an IntegrityError
+    (e.g., due to a unique constraint violation).
 
     Args:
         service (UserService): The UserService instance.
@@ -138,9 +143,9 @@ def test_create_raises_bad_request_when_integrity_error(
     with pytest.raises(AppError) as exc_info:
         service.create(create_payload)
 
-    assert exc_info.value.code == ErrorCode.bad_request
+    assert exc_info.value.code == ErrorCode.BAD_REQUEST
     assert exc_info.value.message == "User already exists"
-    assert exc_info.value.status_code == StatusCode.bad_request
+    assert exc_info.value.status_code == StatusCode.BAD_REQUEST
 
 
 def test_get_by_id_raises_not_found_when_missing(service: UserService, repo: Mock):
@@ -153,7 +158,7 @@ def test_get_by_id_raises_not_found_when_missing(service: UserService, repo: Moc
     """
     repo.get_by_id.return_value = None
 
-    with pytest.raises(NotFoundException) as exc_info:
+    with pytest.raises(NotFoundError) as exc_info:
         service.get_by_id("missing-id")
 
     assert exc_info.value.message == "User not found"
@@ -184,7 +189,7 @@ def test_list_returns_pagination_and_items(service: UserService, repo: Mock):
         service (UserService): The UserService under test.
         repo (Mock): The mocked user repository.
     """
-    page = PaginationInfo(total=1, limit=10, offset=0, hasNext=False, hasPrev=False)
+    page = PaginationInfo(total=1, limit=10, offset=0, has_next=False, has_prev=False)
     items = [make_user()]
     repo.list.return_value = (page, items)
 
@@ -207,7 +212,7 @@ def test_partial_update_calls_check_permission_and_repo_update(
         repo (Mock): The mocked user repository.
         monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch for patching dependencies.
     """
-    current_user = SimpleNamespace(id="owner-id", role=UserRole.user)
+    current_user = SimpleNamespace(id="owner-id", role=UserRole.USER)
     target_user = make_user(auth_id="auth_target")
     repo.get_by_id.return_value = target_user
     repo.partial_update.return_value = target_user
@@ -215,7 +220,9 @@ def test_partial_update_calls_check_permission_and_repo_update(
 
     check_permission_mock = Mock(return_value=True)
     apply_partial_update_mock = Mock(return_value=None)
-    monkeypatch.setattr("app.modules.users.services.check_permission", check_permission_mock)
+    monkeypatch.setattr(
+        "app.modules.users.services.check_permission", check_permission_mock
+    )
     monkeypatch.setattr(
         "app.modules.users.services.apply_partial_update", apply_partial_update_mock
     )
@@ -247,13 +254,15 @@ def test_partial_update_raises_not_found_when_target_missing(
         repo (Mock): The mocked user repository.
         monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch for patching dependencies.
     """
-    current_user = SimpleNamespace(id="owner-id", role=UserRole.user)
+    current_user = SimpleNamespace(id="owner-id", role=UserRole.USER)
     repo.get_by_id.return_value = None
 
     check_permission_mock = Mock(return_value=True)
-    monkeypatch.setattr("app.modules.users.services.check_permission", check_permission_mock)
+    monkeypatch.setattr(
+        "app.modules.users.services.check_permission", check_permission_mock
+    )
 
-    with pytest.raises(NotFoundException) as exc_info:
+    with pytest.raises(NotFoundError) as exc_info:
         service.partial_update(
             payload=UserUpdate(first_name="Updated"),
             user_id="owner-id",
@@ -266,24 +275,25 @@ def test_partial_update_raises_not_found_when_target_missing(
 
 def test_admin_partial_update_denies_non_admin(service: UserService, repo: Mock):
     """
-    Test that service.admin_partial_update raises AppError when a non-admin attempts to update another user.
+    Test that service.admin_partial_update raises AppError
+    when a non-admin attempts to update another user.
 
     Args:
         service (UserService): The UserService under test.
         repo (Mock): The mocked user repository.
     """
-    current_user = SimpleNamespace(id="user-id", role=UserRole.user)
+    current_user = SimpleNamespace(id="user-id", role=UserRole.USER)
 
     with pytest.raises(AppError) as exc_info:
         service.admin_partial_update(
-            payload=AdminUserUpdate(role=UserRole.admin),
+            payload=AdminUserUpdate(role=UserRole.ADMIN),
             user_id="target-id",
             current_user=current_user,
         )
 
-    assert exc_info.value.code == ErrorCode.forbidden
+    assert exc_info.value.code == ErrorCode.FORBIDDEN
     assert exc_info.value.message == "Permission denied"
-    assert exc_info.value.status_code == StatusCode.forbidden
+    assert exc_info.value.status_code == StatusCode.FORBIDDEN
     repo.get_by_id.assert_not_called()
 
 
@@ -299,11 +309,11 @@ def test_admin_partial_update_updates_target_for_admin(
         repo (Mock): The mocked user repository.
         monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch for patching dependencies.
     """
-    current_user = SimpleNamespace(id="admin-id", role=UserRole.admin)
+    current_user = SimpleNamespace(id="admin-id", role=UserRole.ADMIN)
     target_user = make_user(auth_id="auth_target")
     repo.get_by_id.return_value = target_user
     repo.partial_update.return_value = target_user
-    payload = AdminUserUpdate(role=UserRole.admin, is_active=True)
+    payload = AdminUserUpdate(role=UserRole.ADMIN, is_active=True)
     apply_partial_update_mock = Mock(return_value=None)
     monkeypatch.setattr(
         "app.modules.users.services.apply_partial_update", apply_partial_update_mock

@@ -1,13 +1,15 @@
 import logging
+
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from app.core.jwt import verify_auth_token
+
 from app.core.exceptions import (
     AppError,
     ErrorCode,
     StatusCode,
     as_error_response,
 )
+from app.core.jwt import verify_auth_token
 
 
 def register_auth_middleware(app: FastAPI) -> None:
@@ -22,9 +24,9 @@ def register_auth_middleware(app: FastAPI) -> None:
 
                 if len(parts) != 2 or parts[0] != "Bearer":
                     raise AppError(
-                        code=ErrorCode.unauthorized,
+                        code=ErrorCode.UNAUTHORIZED,
                         message="Invalid authorization header format",
-                        status_code=StatusCode.unauthorized,
+                        status_code=StatusCode.UNAUTHORIZED,
                     )
 
                 token = parts[1]
@@ -33,9 +35,9 @@ def register_auth_middleware(app: FastAPI) -> None:
                 clerk_id = payload.get("sub") or payload.get("user_id")
                 if not clerk_id:
                     raise AppError(
-                        code=ErrorCode.unauthorized,
+                        code=ErrorCode.UNAUTHORIZED,
                         message="Token missing user id",
-                        status_code=StatusCode.unauthorized,
+                        status_code=StatusCode.UNAUTHORIZED,
                     )
 
                 request.state.auth = payload
@@ -70,9 +72,9 @@ def register_auth_middleware(app: FastAPI) -> None:
             )
 
             return JSONResponse(
-                status_code=StatusCode.unauthorized,
+                status_code=StatusCode.UNAUTHORIZED,
                 content=as_error_response(
-                    code=ErrorCode.unauthorized,
+                    code=ErrorCode.UNAUTHORIZED,
                     message="Authentication failed",
                 ),
             )

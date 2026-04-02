@@ -30,7 +30,8 @@ def _build_client(service_mock: Mock) -> TestClient:
 
 def test_clerk_webhook_returns_400_on_verification_error(monkeypatch):
     """
-    Test that when the webhook signature verification fails, the endpoint returns HTTP 400 Bad Request
+    Test that when the webhook signature verification fails,
+    the endpoint returns HTTP 400 Bad Request
     and does not attempt to create a user.
     """
     from svix.webhooks import WebhookVerificationError
@@ -66,7 +67,7 @@ def test_clerk_webhook_returns_204_when_auth_id_missing(monkeypatch):
             pass
 
         def verify(self, _payload, _headers):
-            return {"type": routers.ClerkEvent.user_created, "data": {}}
+            return {"type": routers.ClerkEventEnum.user_created, "data": {}}
 
     monkeypatch.setattr(routers, "Webhook", FakeWebhook)
 
@@ -104,7 +105,7 @@ def test_clerk_webhook_creates_user_on_user_created_event(monkeypatch):
 
         def verify(self, _payload, _headers):
             return {
-                "type": routers.ClerkEvent.user_created,
+                "type": routers.ClerkEventEnum.user_created,
                 "data": {
                     "id": "auth_123",
                     "email_addresses": [{"email_address": "user@example.com"}],

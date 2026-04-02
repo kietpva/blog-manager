@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from uuid import UUID
+
 from sqlalchemy.orm import selectinload
-from app.modules.posts.models import Post
-from app.modules.categories.models import Category
+
 from app.db.repositories import BaseRepository
+from app.modules.categories.models import Category
+from app.modules.posts.models import Post
 from app.utils.pagination import PaginationInfo
 
 

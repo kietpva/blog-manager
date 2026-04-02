@@ -26,9 +26,9 @@ def require_roles(*allowed_roles: UserRole) -> Callable[[User], User]:
 
         if user_role not in allowed_roles:
             raise AppError(
-                code=ErrorCode.forbidden,
+                code=ErrorCode.FORBIDDEN,
                 message="Permission denied",
-                status_code=StatusCode.forbidden,
+                status_code=StatusCode.FORBIDDEN,
             )
 
         return current_user

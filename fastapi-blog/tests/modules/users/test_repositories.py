@@ -39,7 +39,8 @@ def test_list_delegates_to_base_repository_with_created_at_desc_order():
     with proper ordering by 'created_at' in descending order.
 
     The test verifies that:
-      - UserRepository.list calls the base repository's list method with the expected limit and offset
+      - UserRepository.list calls the base repository's list method
+      with the expected limit and offset
       - The 'order_by' keyword argument is included and applies to the 'created_at' field
       - The returned pagination and items match the expected values
       - The base list method is called exactly once
@@ -50,8 +51,8 @@ def test_list_delegates_to_base_repository_with_created_at_desc_order():
         total=1,
         limit=10,
         offset=0,
-        hasNext=False,
-        hasPrev=False,
+        has_next=False,
+        has_prev=False,
     )
     expected_items = [Mock(spec=User)]
 
