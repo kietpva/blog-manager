@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from app.core.exceptions import register_exception_handlers
 from app.dependencies.users import get_user_service
-from app.modules.auth import routers
+from app.modules.webhooks import routers
 
 
 def _build_client(service_mock: Mock) -> TestClient:
@@ -48,7 +48,7 @@ def test_clerk_webhook_returns_400_on_verification_error(monkeypatch):
 
     monkeypatch.setattr(routers, "Webhook", FakeWebhook)
 
-    response = client.post("/auth/webhooks/clerk", data=b"{}")
+    response = client.post("/webhooks/clerk", data=b"{}")
 
     assert response.status_code == status.HTTP_400_BAD_REQUEST
     service.create.assert_not_called()
@@ -67,11 +67,11 @@ def test_clerk_webhook_returns_204_when_auth_id_missing(monkeypatch):
             pass
 
         def verify(self, _payload, _headers):
-            return {"type": routers.ClerkEventEnum.user_created, "data": {}}
+            return {"type": routers.ClerkEventEnum.USER_CREATED, "data": {}}
 
     monkeypatch.setattr(routers, "Webhook", FakeWebhook)
 
-    response = client.post("/auth/webhooks/clerk", json={})
+    response = client.post("/webhooks/clerk", json={})
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
     service.create.assert_not_called()
@@ -105,7 +105,7 @@ def test_clerk_webhook_creates_user_on_user_created_event(monkeypatch):
 
         def verify(self, _payload, _headers):
             return {
-                "type": routers.ClerkEventEnum.user_created,
+                "type": routers.ClerkEventEnum.USER_CREATED,
                 "data": {
                     "id": "auth_123",
                     "email_addresses": [{"email_address": "user@example.com"}],
@@ -116,7 +116,7 @@ def test_clerk_webhook_creates_user_on_user_created_event(monkeypatch):
 
     monkeypatch.setattr(routers, "Webhook", FakeWebhook)
 
-    response = client.post("/auth/webhooks/clerk", data=b"ignored")
+    response = client.post("/webhooks/clerk", data=b"ignored")
 
     assert response.status_code == status.HTTP_204_NO_CONTENT
     service.create.assert_called_once()
