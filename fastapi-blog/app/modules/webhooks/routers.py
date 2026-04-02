@@ -12,15 +12,15 @@ from app.utils.helpers import extract_email, extract_first_name, extract_last_na
 
 
 class ClerkEventEnum(enum.Enum):
-    user_created = "user.created"
+    USER_CREATED = "user.created"
 
 
 secret = settings.CLERK_WEBHOOK_SECRET
 
-router = APIRouter(prefix="/auth", tags=["Auth"])
+router = APIRouter(prefix="/webhooks", tags=["Webhooks"])
 
 
-@router.post("/webhooks/clerk", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/clerk", status_code=status.HTTP_204_NO_CONTENT)
 async def clerk_webhook(
     request: Request,
     response: Response,
@@ -58,7 +58,7 @@ async def clerk_webhook(
         event_type.value if hasattr(event_type, "value") else event_type
     )
 
-    if normalized_event_type == ClerkEventEnum.user_created.value:
+    if normalized_event_type == ClerkEventEnum.USER_CREATED.value:
         service.create(
             UserCreate(
                 auth_id=auth_id, email=email, first_name=first_name, last_name=last_name

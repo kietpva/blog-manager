@@ -16,7 +16,7 @@ def test_register_routers_includes_all_module_routers_in_order():
     routers.register_routers(app)
 
     assert app.include_router.call_args_list == [
-        call(routers.auth_router),
+        call(routers.webhooks_router),
         call(routers.users_router),
         call(routers.posts_router),
         call(routers.categories_router),
