@@ -1,5 +1,7 @@
 from datetime import datetime
+
 from sqlalchemy import event
+
 from app.db.base import BaseModel
 
 

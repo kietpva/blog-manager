@@ -1,8 +1,8 @@
 # Handles authentication logic such as verifying JWT tokens
 # and extracting user information from tokens
 import httpx
-from jose import jwt, JWTError
 from fastapi.security import HTTPBearer
+from jose import JWTError, jwt
 
 from app.core.config import settings
 from app.core.exceptions import AppError, ErrorCode, StatusCode
@@ -33,9 +33,9 @@ def get_jwks() -> dict:
 
     except Exception:
         raise AppError(
-            code=ErrorCode.service_unavailable,
+            code=ErrorCode.SERVICE_UNAVAILABLE,
             message="Unable to fetch JWKS",
-            status_code=StatusCode.service_unavailable,
+            status_code=StatusCode.SERVICE_UNAVAILABLE,
         )
 
 
@@ -47,18 +47,18 @@ def get_public_key(token: str) -> dict:
         header = jwt.get_unverified_header(token)
     except JWTError:
         raise AppError(
-            code=ErrorCode.unauthorized,
+            code=ErrorCode.UNAUTHORIZED,
             message="Invalid token header",
-            status_code=StatusCode.unauthorized,
+            status_code=StatusCode.UNAUTHORIZED,
         )
 
     kid = header.get("kid")
 
     if not kid:
         raise AppError(
-            code=ErrorCode.unauthorized,
+            code=ErrorCode.UNAUTHORIZED,
             message="Token missing kid",
-            status_code=StatusCode.unauthorized,
+            status_code=StatusCode.UNAUTHORIZED,
         )
 
     jwks = get_jwks()
@@ -67,9 +67,9 @@ def get_public_key(token: str) -> dict:
         if key["kid"] == kid:
             return key
     raise AppError(
-        code=ErrorCode.unauthorized,
+        code=ErrorCode.UNAUTHORIZED,
         message="Public key not found",
-        status_code=StatusCode.unauthorized,
+        status_code=StatusCode.UNAUTHORIZED,
     )
 
 
@@ -92,7 +92,7 @@ def verify_auth_token(token: str) -> dict:
 
     except JWTError:
         raise AppError(
-            code=ErrorCode.unauthorized,
+            code=ErrorCode.UNAUTHORIZED,
             message="Invalid or expired token",
-            status_code=StatusCode.unauthorized,
+            status_code=StatusCode.UNAUTHORIZED,
         )

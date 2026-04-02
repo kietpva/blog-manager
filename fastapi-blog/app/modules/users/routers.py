@@ -1,6 +1,8 @@
-from typing import List
 import uuid
+
 from fastapi import APIRouter, Depends, Query
+
+from app.core.constants import PaginationResponse, ResponseData
 from app.dependencies.rbac import Admin, Authenticated
 from app.dependencies.users import get_user_service
 from app.modules.users.models import User
@@ -11,7 +13,6 @@ from app.modules.users.schemas import (
     UserUpdate,
 )
 from app.modules.users.services import UserService
-from app.core.constants import PaginationResponse, ResponseData
 from app.utils.pagination import MAX_ITEMS_PER_PAGE, Meta
 
 router = APIRouter(prefix="/users", tags=["Users"])
@@ -47,7 +48,7 @@ def get_by_id(
     dependencies=[Admin],
     response_model=PaginationResponse[list[UserRead]],
 )
-def list(
+def users(
     limit: int = Query(10, ge=1, le=MAX_ITEMS_PER_PAGE),
     offset: int = Query(0, ge=0),
     service: UserService = Depends(get_user_service),
@@ -66,7 +67,7 @@ def list(
         PaginationResponse[List[UserRead]]: Paginated user list and metadata.
     """
     pagination, items = service.list(limit=limit, offset=offset)
-    return PaginationResponse[List[UserRead]](
+    return PaginationResponse[list[UserRead]](
         data=items,
         meta=Meta(pagination=pagination),
     )

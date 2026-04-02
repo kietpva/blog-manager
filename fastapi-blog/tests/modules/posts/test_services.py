@@ -1,10 +1,10 @@
 from types import SimpleNamespace
-from uuid import UUID, uuid4
 from unittest.mock import Mock
+from uuid import UUID, uuid4
 
 import pytest
 
-from app.core.exceptions import NotFoundException
+from app.core.exceptions import NotFoundError
 from app.modules.categories.models import Category
 from app.modules.posts.models import Post
 from app.modules.posts.repositories import PostRepository
@@ -69,11 +69,14 @@ def make_post(author_id: UUID, title: str = "t", content: str = "c") -> Post:
     return Post(title=title, content=content, author_id=author_id)
 
 
-def test_create_raises_not_found_when_categories_missing(service: PostService, repo: Mock):
+def test_create_raises_not_found_when_categories_missing(
+    service: PostService, repo: Mock
+):
     """
     Test that PostService.create raises NotFoundException if any category_ids are missing.
 
-    Ensures that when not all of the requested categories exist, the service raises the expected exception
+    Ensures that when not all of the requested categories exist,
+    the service raises the expected exception
     and that the repository's create method is not invoked.
     """
     author_id = uuid4()
@@ -83,7 +86,7 @@ def test_create_raises_not_found_when_categories_missing(service: PostService, r
 
     payload = PostCreate(title="Post", content="Content", category_ids=cat_ids)
 
-    with pytest.raises(NotFoundException) as exc_info:
+    with pytest.raises(NotFoundError) as exc_info:
         service.create(payload, author_id=author_id)
 
     assert exc_info.value.message == "One or more categories not found"
@@ -91,11 +94,14 @@ def test_create_raises_not_found_when_categories_missing(service: PostService, r
     repo.create.assert_not_called()
 
 
-def test_create_calls_repo_create_with_constructed_post(service: PostService, repo: Mock):
+def test_create_calls_repo_create_with_constructed_post(
+    service: PostService, repo: Mock
+):
     """
     Test that PostService.create calls repo.create with a properly constructed Post object.
 
-    Ensures that the returned post instance matches the attributes given in the payload and repository,
+    Ensures that the returned post instance matches the attributes
+    given in the payload and repository,
     and that the appropriate repository methods are called.
     """
     author_id = uuid4()
@@ -126,7 +132,7 @@ def test_get_by_id_raises_not_found_when_missing(service: PostService, repo: Moc
     post_id = uuid4()
     repo.get_by_id.return_value = None
 
-    with pytest.raises(NotFoundException) as exc_info:
+    with pytest.raises(NotFoundError) as exc_info:
         service.get_by_id(post_id)
 
     assert exc_info.value.message == "Post not found"
@@ -156,7 +162,7 @@ def test_list_returns_pagination_and_items(service: PostService, repo: Mock):
 
     Asserts that the result matches the repository's return values, and correct arguments are used.
     """
-    page = PaginationInfo(total=1, limit=10, offset=0, hasNext=False, hasPrev=False)
+    page = PaginationInfo(total=1, limit=10, offset=0, has_next=False, has_prev=False)
     items = [make_post(author_id=uuid4())]
     repo.list.return_value = (page, items)
 
@@ -192,7 +198,9 @@ def test_partial_update_updates_title_and_categories(
 
     check_permission_mock = Mock(return_value=True)
     apply_partial_update_mock = Mock(return_value=None)
-    monkeypatch.setattr("app.modules.posts.services.check_permission", check_permission_mock)
+    monkeypatch.setattr(
+        "app.modules.posts.services.check_permission", check_permission_mock
+    )
     monkeypatch.setattr(
         "app.modules.posts.services.apply_partial_update", apply_partial_update_mock
     )
@@ -202,7 +210,9 @@ def test_partial_update_updates_title_and_categories(
     expected_category_ids = expected_data.pop("category_ids", None)
     assert expected_category_ids == cat_ids
 
-    result = service.partial_update(post_id=post_id, payload=payload, current_user=current_user)
+    result = service.partial_update(
+        post_id=post_id, payload=payload, current_user=current_user
+    )
 
     check_permission_mock.assert_called_once_with(current_user, author_id)
     repo.get_categories_by_ids.assert_called_once_with(cat_ids)
@@ -217,7 +227,8 @@ def test_partial_update_raises_not_found_when_categories_missing(
     service: PostService, repo: Mock, monkeypatch: pytest.MonkeyPatch
 ):
     """
-    Test that PostService.partial_update raises NotFoundException if provided category_ids are missing.
+    Test that PostService.partial_update raises NotFoundException
+    if provided category_ids are missing.
 
     Ensures permission is checked first, categories are fetched, and no update occurs if not found.
     """
@@ -231,11 +242,15 @@ def test_partial_update_raises_not_found_when_categories_missing(
     repo.get_categories_by_ids.return_value = [make_category("cat_1")]  # missing one
 
     check_permission_mock = Mock(return_value=True)
-    monkeypatch.setattr("app.modules.posts.services.check_permission", check_permission_mock)
+    monkeypatch.setattr(
+        "app.modules.posts.services.check_permission", check_permission_mock
+    )
 
     payload = PostUpdate(category_ids=cat_ids)
-    with pytest.raises(NotFoundException) as exc_info:
-        service.partial_update(post_id=post_id, payload=payload, current_user=current_user)
+    with pytest.raises(NotFoundError) as exc_info:
+        service.partial_update(
+            post_id=post_id, payload=payload, current_user=current_user
+        )
 
     assert exc_info.value.message == "One or more categories not found"
     check_permission_mock.assert_called_once_with(current_user, author_id)
@@ -256,11 +271,15 @@ def test_partial_update_raises_not_found_when_post_missing(
     current_user = SimpleNamespace(id=uuid4())
 
     check_permission_mock = Mock(return_value=True)
-    monkeypatch.setattr("app.modules.posts.services.check_permission", check_permission_mock)
+    monkeypatch.setattr(
+        "app.modules.posts.services.check_permission", check_permission_mock
+    )
 
     payload = PostUpdate(title="New title")
-    with pytest.raises(NotFoundException) as exc_info:
-        service.partial_update(post_id=post_id, payload=payload, current_user=current_user)
+    with pytest.raises(NotFoundError) as exc_info:
+        service.partial_update(
+            post_id=post_id, payload=payload, current_user=current_user
+        )
 
     assert exc_info.value.message == "Post not found"
     check_permission_mock.assert_not_called()
@@ -292,7 +311,9 @@ def test_partial_update_without_category_ids_does_not_fetch_categories(
 
     check_permission_mock = Mock(return_value=True)
     apply_partial_update_mock = Mock(return_value=None)
-    monkeypatch.setattr("app.modules.posts.services.check_permission", check_permission_mock)
+    monkeypatch.setattr(
+        "app.modules.posts.services.check_permission", check_permission_mock
+    )
     monkeypatch.setattr(
         "app.modules.posts.services.apply_partial_update", apply_partial_update_mock
     )
@@ -301,7 +322,9 @@ def test_partial_update_without_category_ids_does_not_fetch_categories(
     expected_data = payload.model_dump(exclude_unset=True)
     expected_data.pop("category_ids", None)
 
-    result = service.partial_update(post_id=post_id, payload=payload, current_user=current_user)
+    result = service.partial_update(
+        post_id=post_id, payload=payload, current_user=current_user
+    )
 
     check_permission_mock.assert_called_once_with(current_user, author_id)
     repo.get_categories_by_ids.assert_not_called()
@@ -329,7 +352,9 @@ def test_delete_calls_repo_delete_and_permission(
 
     current_user = SimpleNamespace(id=uuid4())
     check_permission_mock = Mock(return_value=True)
-    monkeypatch.setattr("app.modules.posts.services.check_permission", check_permission_mock)
+    monkeypatch.setattr(
+        "app.modules.posts.services.check_permission", check_permission_mock
+    )
 
     service.delete(post_id=post_id, current_user=current_user)
 
@@ -358,12 +383,13 @@ def test_delete_raises_not_found_when_post_missing(
 
     current_user = SimpleNamespace(id=uuid4())
     check_permission_mock = Mock(return_value=True)
-    monkeypatch.setattr("app.modules.posts.services.check_permission", check_permission_mock)
+    monkeypatch.setattr(
+        "app.modules.posts.services.check_permission", check_permission_mock
+    )
 
-    with pytest.raises(NotFoundException) as exc_info:
+    with pytest.raises(NotFoundError) as exc_info:
         service.delete(post_id=post_id, current_user=current_user)
 
     assert exc_info.value.message == "Post not found"
     check_permission_mock.assert_not_called()
     repo.delete.assert_not_called()
-

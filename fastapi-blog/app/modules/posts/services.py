@@ -1,10 +1,10 @@
 from uuid import UUID
 
+from app.core.exceptions import NotFoundError
 from app.decorators.permissions import check_permission
+from app.modules.posts.models import Post
 from app.modules.posts.repositories import PostRepository
 from app.modules.posts.schemas import PostCreate, PostUpdate
-from app.modules.posts.models import Post
-from app.core.exceptions import NotFoundException
 from app.utils.helpers import apply_partial_update
 from app.utils.pagination import PaginationInfo
 
@@ -40,7 +40,7 @@ class PostService:
         """
         categories = self.repo.get_categories_by_ids(payload.category_ids)
         if len(categories) != len(set(payload.category_ids)):
-            raise NotFoundException(message="One or more categories not found")
+            raise NotFoundError(message="One or more categories not found")
 
         post = Post(
             **payload.model_dump(exclude={"category_ids"}),
@@ -66,7 +66,7 @@ class PostService:
         post = self.repo.get_by_id(post_id)
 
         if not post:
-            raise NotFoundException(message="Post not found")
+            raise NotFoundError(message="Post not found")
         return post
 
     def list(self, limit: int, offset: int) -> tuple[PaginationInfo, list[Post]]:
@@ -115,7 +115,7 @@ class PostService:
         if category_ids is not None:
             categories = self.repo.get_categories_by_ids(category_ids)
             if len(categories) != len(set(category_ids)):
-                raise NotFoundException(message="One or more categories not found")
+                raise NotFoundError(message="One or more categories not found")
             post.categories = categories
 
         apply_partial_update(instance=post, data=data)

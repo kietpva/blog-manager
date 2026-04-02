@@ -80,9 +80,9 @@ def test_get_jwks_raises_service_unavailable_on_fetch_exception():
     with pytest.raises(AppError) as exc_info:
         jwt_module.get_jwks()
 
-    assert exc_info.value.code == ErrorCode.service_unavailable
+    assert exc_info.value.code == ErrorCode.SERVICE_UNAVAILABLE
     assert exc_info.value.message == "Unable to fetch JWKS"
-    assert exc_info.value.status_code == StatusCode.service_unavailable
+    assert exc_info.value.status_code == StatusCode.SERVICE_UNAVAILABLE
 
 
 def test_get_public_key_raises_unauthorized_when_header_is_invalid():
@@ -100,9 +100,9 @@ def test_get_public_key_raises_unauthorized_when_header_is_invalid():
     with pytest.raises(AppError) as exc_info:
         jwt_module.get_public_key("any-token")
 
-    assert exc_info.value.code == ErrorCode.unauthorized
+    assert exc_info.value.code == ErrorCode.UNAUTHORIZED
     assert exc_info.value.message == "Invalid token header"
-    assert exc_info.value.status_code == StatusCode.unauthorized
+    assert exc_info.value.status_code == StatusCode.UNAUTHORIZED
 
 
 def test_get_public_key_raises_unauthorized_when_kid_missing():
@@ -118,9 +118,9 @@ def test_get_public_key_raises_unauthorized_when_kid_missing():
     with pytest.raises(AppError) as exc_info:
         jwt_module.get_public_key("any-token")
 
-    assert exc_info.value.code == ErrorCode.unauthorized
+    assert exc_info.value.code == ErrorCode.UNAUTHORIZED
     assert exc_info.value.message == "Token missing kid"
-    assert exc_info.value.status_code == StatusCode.unauthorized
+    assert exc_info.value.status_code == StatusCode.UNAUTHORIZED
 
 
 def test_get_public_key_returns_matching_key():
@@ -158,9 +158,9 @@ def test_get_public_key_raises_unauthorized_when_key_not_found():
     with pytest.raises(AppError) as exc_info:
         jwt_module.get_public_key("any-token")
 
-    assert exc_info.value.code == ErrorCode.unauthorized
+    assert exc_info.value.code == ErrorCode.UNAUTHORIZED
     assert exc_info.value.message == "Public key not found"
-    assert exc_info.value.status_code == StatusCode.unauthorized
+    assert exc_info.value.status_code == StatusCode.UNAUTHORIZED
 
 
 def test_verify_auth_token_returns_payload_on_success():
@@ -190,6 +190,6 @@ def test_verify_auth_token_raises_unauthorized_on_decode_jwterror():
     with pytest.raises(AppError) as exc_info:
         jwt_module.verify_auth_token("token")
 
-    assert exc_info.value.code == ErrorCode.unauthorized
+    assert exc_info.value.code == ErrorCode.UNAUTHORIZED
     assert exc_info.value.message == "Invalid or expired token"
-    assert exc_info.value.status_code == StatusCode.unauthorized
+    assert exc_info.value.status_code == StatusCode.UNAUTHORIZED

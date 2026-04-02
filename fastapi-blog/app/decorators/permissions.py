@@ -13,7 +13,7 @@ def check_permission(current_user, owner_id):
     """
 
     # Admin has full permissions
-    if current_user.role == UserRole.admin:
+    if current_user.role == UserRole.ADMIN:
         return True
 
     # Users can only access their own posts
@@ -21,7 +21,7 @@ def check_permission(current_user, owner_id):
         return True
 
     raise AppError(
-        code=ErrorCode.forbidden,
+        code=ErrorCode.FORBIDDEN,
         message="Permission denied",
-        status_code=StatusCode.forbidden,
+        status_code=StatusCode.FORBIDDEN,
     )

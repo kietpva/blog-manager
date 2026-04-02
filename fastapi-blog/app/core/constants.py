@@ -6,7 +6,6 @@ from pydantic import BaseModel
 
 from app.utils.pagination import Meta
 
-
 T = TypeVar("T")
 
 

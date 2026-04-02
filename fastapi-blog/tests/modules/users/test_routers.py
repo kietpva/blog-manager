@@ -1,12 +1,12 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
-from uuid import uuid4
 from unittest.mock import Mock
+from uuid import uuid4
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from app.core.exceptions import NotFoundException, register_exception_handlers
+from app.core.exceptions import NotFoundError, register_exception_handlers
 from app.dependencies.rbac import Admin, Authenticated
 from app.dependencies.users import get_user_service
 from app.modules.users.models import UserRole
@@ -48,29 +48,30 @@ def _admin_user_read_obj(user_id):
         email="admin@example.com",
         first_name="Admin",
         last_name="User",
-        role=UserRole.admin,
+        role=UserRole.ADMIN,
         is_active=True,
-        created_at=datetime.now(timezone.utc),
-        updated_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
     )
 
 
 def _build_client(service_mock: Mock) -> tuple[TestClient, SimpleNamespace]:
     """
-    Build a FastAPI TestClient with user service and authentication dependencies overridden for testing.
+    Build a FastAPI TestClient with user service and
+    authentication dependencies overridden for testing.
 
     Args:
         service_mock (Mock): A mock object for the user service.
 
     Returns:
-        tuple[TestClient, SimpleNamespace]: A tuple containing a configured TestClient and a SimpleNamespace object 
-        representing the authenticated admin user.
+        tuple[TestClient, SimpleNamespace]: A tuple containing a configured TestClient and
+        a SimpleNamespace object representing the authenticated admin user.
     """
     app = FastAPI()
     app.include_router(router)
     register_exception_handlers(app)
 
-    me = SimpleNamespace(id=uuid4(), role=UserRole.admin)
+    me = SimpleNamespace(id=uuid4(), role=UserRole.ADMIN)
     app.dependency_overrides[get_user_service] = lambda: service_mock
     app.dependency_overrides[Authenticated.dependency] = lambda: me
     app.dependency_overrides[Admin.dependency] = lambda: me
@@ -112,7 +113,7 @@ def test_get_by_id_returns_404_when_service_raises_not_found():
     """
     service = Mock()
     user_id = uuid4()
-    service.get_by_id.side_effect = NotFoundException(message="User not found")
+    service.get_by_id.side_effect = NotFoundError(message="User not found")
     client, _ = _build_client(service)
 
     response = client.get(f"/users/{user_id}")
@@ -125,7 +126,8 @@ def test_get_by_id_returns_404_when_service_raises_not_found():
 
 def test_list_returns_paginated_users():
     """
-    Test that the GET /users endpoint returns a paginated list of users and correct pagination metadata.
+    Test that the GET /users endpoint returns a paginated list of users and
+    correct pagination metadata.
 
     This test verifies that:
       - The endpoint returns a 200 status code.
@@ -135,7 +137,7 @@ def test_list_returns_paginated_users():
     """
     service = Mock()
     user_id = uuid4()
-    page = PaginationInfo(total=1, limit=10, offset=0, hasNext=False, hasPrev=False)
+    page = PaginationInfo(total=1, limit=10, offset=0, has_next=False, has_prev=False)
     service.list.return_value = (page, [_user_read_obj(user_id)])
     client, _ = _build_client(service)
 
@@ -145,17 +147,19 @@ def test_list_returns_paginated_users():
     body = response.json()
     assert body["data"][0]["id"] == str(user_id)
     assert body["meta"]["pagination"]["total"] == 1
-    assert body["meta"]["pagination"]["hasNext"] is False
+    assert body["meta"]["pagination"]["has_next"] is False
     service.list.assert_called_once_with(limit=10, offset=0)
 
 
 def test_partial_update_calls_service_and_returns_user():
     """
-    Test that PATCH /users/{user_id} calls the service's partial_update method and returns the updated user.
+    Test that PATCH /users/{user_id} calls the service's partial_update method and
+    returns the updated user.
 
     This test verifies that:
       - The endpoint returns a 200 status code.
-      - The response body contains the updated user's data (but always returns 'John' as first_name in test object).
+      - The response body contains the updated user's data
+      (but always returns 'John' as first_name in test object).
       - The user service's partial_update method is called once with expected arguments:
           - user_id is passed correctly.
           - current_user context is passed.
@@ -182,7 +186,8 @@ def test_partial_update_calls_service_and_returns_user():
 
 def test_admin_partial_update_calls_service_and_returns_admin_user():
     """
-    Test that PATCH /users/admin/{user_id} calls the service's admin_partial_update method and returns the updated admin user.
+    Test that PATCH /users/admin/{user_id} calls the service's admin_partial_update method and
+    returns the updated admin user.
 
     This test verifies that:
       - The endpoint returns a 200 status code.
@@ -190,7 +195,8 @@ def test_admin_partial_update_calls_service_and_returns_admin_user():
       - The user service's admin_partial_update method is called once with expected arguments:
           - user_id is passed correctly.
           - current_user context is passed.
-          - payload contains only changed fields ("role": "admin", "is_active": True) using exclude_unset.
+          - payload contains only changed fields ("role": "admin", "is_active": True)
+          using exclude_unset.
     """
     service = Mock()
     user_id = uuid4()
@@ -211,6 +217,6 @@ def test_admin_partial_update_calls_service_and_returns_admin_user():
     assert kwargs["user_id"] == user_id
     assert kwargs["current_user"] is me
     assert kwargs["payload"].model_dump(exclude_unset=True) == {
-        "role": UserRole.admin,
+        "role": UserRole.ADMIN,
         "is_active": True,
     }

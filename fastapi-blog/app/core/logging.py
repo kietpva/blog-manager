@@ -1,14 +1,13 @@
-import logging
 import json
+import logging
 import time
 import uuid
 from contextvars import ContextVar
-from typing import Any, Dict
+from typing import Any
 
 from fastapi import Request
 
 from app.core.config import settings
-
 
 # ====== Context ======
 request_id_ctx: ContextVar[str | None] = ContextVar("request_id", default=None)
@@ -39,7 +38,7 @@ STANDARD_LOG_ATTRS = {
 }
 
 
-def extract_extra(record: logging.LogRecord) -> Dict[str, Any]:
+def extract_extra(record: logging.LogRecord) -> dict[str, Any]:
     return {k: v for k, v in record.__dict__.items() if k not in STANDARD_LOG_ATTRS}
 
 

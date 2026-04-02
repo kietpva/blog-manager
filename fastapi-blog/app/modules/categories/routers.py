@@ -1,15 +1,15 @@
-from typing import List
 from fastapi import APIRouter, Depends
+
+from app.core.constants import ResponseData
 from app.core.exceptions import StatusCode
 from app.dependencies.categories import get_category_service
 from app.dependencies.rbac import Admin, Authenticated
-from app.modules.categories.services import CategoryService
 from app.modules.categories.schemas import (
     CategoryCreate,
-    CategoryUpdate,
     CategoryResponse,
+    CategoryUpdate,
 )
-from app.core.constants import ResponseData
+from app.modules.categories.services import CategoryService
 
 router = APIRouter(prefix="/categories", tags=["Categories"])
 
@@ -39,10 +39,10 @@ def create(
 
 @router.get(
     "",
-    response_model=ResponseData[List[CategoryResponse]],
+    response_model=ResponseData[list[CategoryResponse]],
     dependencies=[Authenticated],
 )
-def list(
+def categories(
     service: CategoryService = Depends(get_category_service),
 ):
     """
@@ -55,7 +55,7 @@ def list(
         ResponseData[list[CategoryResponse]]: A list of all categories in a response model.
     """
     data = service.list()
-    return ResponseData[List[CategoryResponse]](data=data)
+    return ResponseData[list[CategoryResponse]](data=data)
 
 
 @router.get(
@@ -109,7 +109,7 @@ def partial_update(
 @router.delete(
     "/{category_id}",
     dependencies=[Admin],
-    status_code=StatusCode.no_content,
+    status_code=StatusCode.NO_CONTENT,
 )
 def delete_category(
     category_id: str,

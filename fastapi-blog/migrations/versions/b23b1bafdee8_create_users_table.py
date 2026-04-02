@@ -6,18 +6,17 @@ Create Date: 2026-03-17 16:44:50.417350
 
 """
 
-from typing import Sequence, Union
+from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
-
 
 # revision identifiers, used by Alembic.
 revision: str = "b23b1bafdee8"
-down_revision: Union[str, Sequence[str], None] = "efc5cee46fe0"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | Sequence[str] | None = "efc5cee46fe0"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -36,9 +35,9 @@ def upgrade() -> None:
         sa.Column("last_name", sa.String(255), nullable=True),
         sa.Column(
             "role",
-            postgresql.ENUM("admin", "user", name="user_role", create_type=False),
+            postgresql.ENUM("ADMIN", "USER", name="user_role", create_type=False),
             nullable=False,
-            server_default="user",
+            server_default="USER",
         ),
         sa.Column(
             "is_active",

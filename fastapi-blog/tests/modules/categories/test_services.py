@@ -3,7 +3,7 @@ from uuid import uuid4
 
 import pytest
 
-from app.core.exceptions import AppError, ErrorCode, NotFoundException, StatusCode
+from app.core.exceptions import AppError, ErrorCode, NotFoundError, StatusCode
 from app.modules.categories.models import Category
 from app.modules.categories.repositories import CategoryRepository
 from app.modules.categories.schemas import CategoryCreate, CategoryUpdate
@@ -59,9 +59,9 @@ def test_create_raises_bad_request_when_name_exists(
     with pytest.raises(AppError) as exc_info:
         service.create(payload)
 
-    assert exc_info.value.code == ErrorCode.bad_request
+    assert exc_info.value.code == ErrorCode.BAD_REQUEST
     assert exc_info.value.message == "Category name already exists"
-    assert exc_info.value.status_code == StatusCode.bad_request
+    assert exc_info.value.status_code == StatusCode.BAD_REQUEST
     repo.create.assert_not_called()
 
 
@@ -103,7 +103,7 @@ def test_get_by_id_raises_not_found_when_missing(service: CategoryService, repo:
     """
     repo.get_by_id.return_value = None
 
-    with pytest.raises(NotFoundException) as exc_info:
+    with pytest.raises(NotFoundError) as exc_info:
         service.get_by_id("missing-id")
 
     assert exc_info.value.message == "Category not found"
@@ -140,9 +140,9 @@ def test_partial_update_raises_conflict_when_name_belongs_to_other_category(
     with pytest.raises(AppError) as exc_info:
         service.partial_update(str(category.id), payload)
 
-    assert exc_info.value.code == ErrorCode.bad_request
+    assert exc_info.value.code == ErrorCode.BAD_REQUEST
     assert exc_info.value.message == "Category name already exists"
-    assert exc_info.value.status_code == StatusCode.bad_request
+    assert exc_info.value.status_code == StatusCode.BAD_REQUEST
     repo.partial_update.assert_not_called()
 
 
@@ -150,7 +150,7 @@ def test_partial_update_applies_data_and_calls_repo_update(
     service: CategoryService, repo: Mock, monkeypatch: pytest.MonkeyPatch
 ):
     """
-    Test that updating a category applies the payload via apply_partial_update and persists via repo.
+    Test that updating a category applies the payload via apply_partial_update and persists via repo
     Allows reuse of the same name if IDs match.
     """
     category = make_category(name="old", description="old desc")
@@ -180,7 +180,8 @@ def test_delete_category_deletes_existing_category(
     service: CategoryService, repo: Mock
 ):
     """
-    Test that deleting an existing category calls the repository's delete method with the correct instance.
+    Test that deleting an existing category calls the repository's delete method with
+    the correct instance.
     """
     category = make_category()
     repo.get_by_id.return_value = category

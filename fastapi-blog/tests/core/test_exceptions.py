@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 from app.core.exceptions import (
     AppError,
     ErrorCode,
-    NotFoundException,
+    NotFoundError,
     StatusCode,
     as_error_response,
     http_exception_to_error,
@@ -22,12 +22,12 @@ def test_status_code_and_error_code_values():
     Ensures StatusCode.ok, StatusCode.service_unavailable, and key ErrorCode attributes
     have the correct values from enums/constants.
     """
-    assert StatusCode.ok == 200
-    assert StatusCode.service_unavailable == 503
+    assert StatusCode.OK == 200
+    assert StatusCode.SERVICE_UNAVAILABLE == 503
 
-    assert ErrorCode.bad_request == "bad_request"
-    assert ErrorCode.internal_server_error == "internal_server_error"
-    assert ErrorCode.service_unavailable == "service_unavailable"
+    assert ErrorCode.BAD_REQUEST == "bad_request"
+    assert ErrorCode.INTERNAL_SERVER_ERROR == "internal_server_error"
+    assert ErrorCode.SERVICE_UNAVAILABLE == "service_unavailable"
 
 
 def test_not_found_exception_defaults():
@@ -36,11 +36,11 @@ def test_not_found_exception_defaults():
 
     Asserts that it subclasses AppError and checks the default code, message, and status.
     """
-    exc = NotFoundException()
+    exc = NotFoundError()
     assert isinstance(exc, AppError)
-    assert exc.code == ErrorCode.not_found
+    assert exc.code == ErrorCode.NOT_FOUND
     assert exc.message == "Resource not found"
-    assert exc.status_code == StatusCode.not_found
+    assert exc.status_code == StatusCode.NOT_FOUND
 
 
 def test_not_found_exception_custom_message_and_code():
@@ -49,10 +49,10 @@ def test_not_found_exception_custom_message_and_code():
 
     Asserts that a custom code and message are properly set on exception instantiation.
     """
-    exc = NotFoundException(message="Post not found", code=ErrorCode.post_not_found)
-    assert exc.code == ErrorCode.post_not_found
+    exc = NotFoundError(message="Post not found", code=ErrorCode.POST_NOT_FOUND)
+    assert exc.code == ErrorCode.POST_NOT_FOUND
     assert exc.message == "Post not found"
-    assert exc.status_code == StatusCode.not_found
+    assert exc.status_code == StatusCode.NOT_FOUND
 
 
 def test_as_error_response_builds_expected_shape():
@@ -123,9 +123,9 @@ def test_register_exception_handlers_triggers_custom_handlers():
     @app.get("/app-error")
     def raise_app_error():
         raise AppError(
-            code=ErrorCode.forbidden,
+            code=ErrorCode.FORBIDDEN,
             message="Permission denied",
-            status_code=StatusCode.forbidden,
+            status_code=StatusCode.FORBIDDEN,
         )
 
     @app.get("/http-error")

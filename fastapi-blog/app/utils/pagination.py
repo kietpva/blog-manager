@@ -1,6 +1,5 @@
 from pydantic import BaseModel
 
-
 MAX_ITEMS_PER_PAGE: int = 100
 
 
@@ -12,15 +11,15 @@ class PaginationInfo(BaseModel):
         total (int): The total number of items available.
         limit (int): The maximum number of items returned per page.
         offset (int): The number of items skipped before collecting the result set.
-        hasNext (bool): Whether there is a next page of items.
-        hasPrev (bool): Whether there is a previous page of items.
+        has_mext (bool): Whether there is a next page of items.
+        has_prev (bool): Whether there is a previous page of items.
     """
 
     total: int
     limit: int
     offset: int
-    hasNext: bool
-    hasPrev: bool
+    has_next: bool
+    has_prev: bool
 
 
 class Meta(BaseModel):
@@ -50,6 +49,6 @@ def build_pagination(total: int, limit: int, offset: int) -> PaginationInfo:
         total=total,
         limit=limit,
         offset=offset,
-        hasNext=offset + limit < total,
-        hasPrev=offset > 0,
+        has_next=offset + limit < total,
+        has_prev=offset > 0,
     )

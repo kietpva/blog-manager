@@ -1,14 +1,14 @@
-from contextlib import asynccontextmanager
 import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
+from pyngrok import ngrok
 
 from app.core.exceptions import register_exception_handlers
-from app.core.logging import setup_logging
+from app.core.logging import logging_middleware, setup_logging
 from app.db.init_db import init_db
 from app.middleware.auth_middleware import register_auth_middleware
 from app.routers import register_routers
-from pyngrok import ngrok
-from app.core.logging import logging_middleware
 
 
 @asynccontextmanager

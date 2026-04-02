@@ -1,14 +1,14 @@
-from typing import List
-from fastapi import APIRouter, Depends, Query
 from uuid import UUID
+
+from fastapi import APIRouter, Depends, Query
 
 from app.core.constants import PaginationResponse, ResponseData
 from app.core.exceptions import StatusCode
+from app.dependencies.auth import get_current_active_user
 from app.dependencies.posts import get_post_service
 from app.dependencies.rbac import Authenticated
+from app.modules.posts.schemas import PostCreate, PostResponse, PostUpdate
 from app.modules.posts.services import PostService
-from app.modules.posts.schemas import PostCreate, PostUpdate, PostResponse
-from app.dependencies.auth import get_current_active_user
 from app.utils.pagination import MAX_ITEMS_PER_PAGE, Meta
 
 router = APIRouter(prefix="/posts", tags=["Posts"])
@@ -67,7 +67,7 @@ def get_by_id(
     response_model=PaginationResponse[list[PostResponse]],
     dependencies=[Authenticated],
 )
-def list(
+def posts(
     limit: int = Query(10, ge=1, le=MAX_ITEMS_PER_PAGE),
     offset: int = Query(0, ge=0),
     service: PostService = Depends(get_post_service),
@@ -86,7 +86,7 @@ def list(
 
     pagination, items = service.list(limit, offset)
 
-    return PaginationResponse[List[PostResponse]](
+    return PaginationResponse[list[PostResponse]](
         data=items,
         meta=Meta(pagination=pagination),
     )
@@ -122,7 +122,7 @@ def partial_update(
 @router.delete(
     "/{post_id}",
     dependencies=[Authenticated],
-    status_code=StatusCode.no_content,
+    status_code=StatusCode.NO_CONTENT,
 )
 def delete(
     post_id: UUID,

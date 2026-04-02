@@ -1,12 +1,12 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
-from uuid import uuid4
 from unittest.mock import Mock
+from uuid import uuid4
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from app.core.exceptions import NotFoundException, register_exception_handlers
+from app.core.exceptions import NotFoundError, register_exception_handlers
 from app.dependencies.posts import get_post_service
 from app.dependencies.rbac import Authenticated
 from app.modules.posts.routers import router
@@ -32,7 +32,7 @@ def _post_read_obj(post_id, author_id, title="Title", content="Content"):
         title=title,
         content=content,
         author_id=author_id,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
         categories=[],
     )
 
@@ -51,7 +51,7 @@ def _build_client(service_mock: Mock) -> tuple[TestClient, SimpleNamespace]:
     app.include_router(router)
     register_exception_handlers(app)
 
-    me = SimpleNamespace(id=uuid4(), role=UserRole.admin)
+    me = SimpleNamespace(id=uuid4(), role=UserRole.ADMIN)
     app.dependency_overrides[get_post_service] = lambda: service_mock
     # Override the underlying function used by Authenticated and get_current_active_user.
     app.dependency_overrides[Authenticated.dependency] = lambda: me
@@ -84,7 +84,7 @@ def test_get_by_id_returns_404_when_service_raises_not_found():
     """
     service = Mock()
     post_id = uuid4()
-    service.get_by_id.side_effect = NotFoundException(message="Post not found")
+    service.get_by_id.side_effect = NotFoundError(message="Post not found")
 
     client, _ = _build_client(service)
     response = client.get(f"/posts/{post_id}")
@@ -103,7 +103,7 @@ def test_list_returns_paginated_posts():
     post_id = uuid4()
     author_id = uuid4()
 
-    page = PaginationInfo(total=1, limit=10, offset=0, hasNext=False, hasPrev=False)
+    page = PaginationInfo(total=1, limit=10, offset=0, has_next=False, has_prev=False)
     service.list.return_value = (page, [_post_read_obj(post_id, author_id)])
 
     client, _ = _build_client(service)
@@ -113,7 +113,7 @@ def test_list_returns_paginated_posts():
     body = response.json()
     assert body["data"][0]["id"] == str(post_id)
     assert body["meta"]["pagination"]["total"] == 1
-    assert body["meta"]["pagination"]["hasNext"] is False
+    assert body["meta"]["pagination"]["has_next"] is False
     service.list.assert_called_once_with(10, 0)
 
 
@@ -126,7 +126,9 @@ def test_create_calls_service_and_returns_post():
     payload = {"title": "New title", "content": "Body", "category_ids": []}
 
     client, me = _build_client(service)
-    service.create.return_value = _post_read_obj(post_id, author_id=me.id, title=payload["title"])
+    service.create.return_value = _post_read_obj(
+        post_id, author_id=me.id, title=payload["title"]
+    )
 
     response = client.post("/posts", json=payload)
 
@@ -161,10 +163,14 @@ def test_partial_update_calls_service_and_returns_post():
     assert body["data"]["title"] == "Updated title"
 
     assert service.partial_update.call_count == 1
-    called_post_id, post_update_model, called_current_user = service.partial_update.call_args.args
+    called_post_id, post_update_model, called_current_user = (
+        service.partial_update.call_args.args
+    )
     assert called_post_id == post_id
     assert called_current_user is me
-    assert post_update_model.model_dump(exclude_unset=True) == {"title": "Updated title"}
+    assert post_update_model.model_dump(exclude_unset=True) == {
+        "title": "Updated title"
+    }
 
 
 def test_delete_returns_204_and_calls_service():
@@ -182,4 +188,3 @@ def test_delete_returns_204_and_calls_service():
     called_post_id, called_current_user = service.delete.call_args.args
     assert called_post_id == post_id
     assert called_current_user is me
-
