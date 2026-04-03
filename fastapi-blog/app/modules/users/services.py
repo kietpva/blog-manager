@@ -1,7 +1,11 @@
 from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 
-from app.core.exceptions import AppError, ErrorCode, NotFoundError, StatusCode
+from app.core.exceptions import (
+    BadRequestError,
+    ForbiddenError,
+    NotFoundError,
+)
 from app.decorators.permissions import check_permission
 from app.modules.users.models import User, UserRole
 from app.modules.users.repositories import UserRepository
@@ -61,11 +65,7 @@ class UserService:
             return self.repo.create(user)
 
         except IntegrityError:
-            raise AppError(
-                code=ErrorCode.BAD_REQUEST,
-                message="User already exists",
-                status_code=StatusCode.BAD_REQUEST,
-            )
+            raise BadRequestError(message="User already exists")
 
     def get_by_id(self, user_id: str) -> User:
         """
@@ -148,11 +148,7 @@ class UserService:
             AppError: If current user is not an admin.
         """
         if current_user.role != UserRole.ADMIN:
-            raise AppError(
-                code=ErrorCode.FORBIDDEN,
-                message="Permission denied",
-                status_code=StatusCode.FORBIDDEN,
-            )
+            raise ForbiddenError(message="Permission denied")
 
         return self._partial_update_user(user_id=user_id, payload=payload)
 

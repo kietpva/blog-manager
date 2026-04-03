@@ -2,14 +2,18 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 
-from app.core.constants import PaginationResponse, ResponseData
+from app.core.constants import MAX_ITEMS_PER_PAGE
 from app.core.exceptions import StatusCode
 from app.dependencies.auth import get_current_active_user
 from app.dependencies.posts import get_post_service
 from app.dependencies.rbac import Authenticated
 from app.modules.posts.schemas import PostCreate, PostResponse, PostUpdate
 from app.modules.posts.services import PostService
-from app.utils.pagination import MAX_ITEMS_PER_PAGE, Meta
+from app.utils.pagination import (
+    Meta,
+    PaginationResponse,
+    ResponseData,
+)
 
 router = APIRouter(prefix="/posts", tags=["Posts"])
 

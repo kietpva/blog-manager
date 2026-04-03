@@ -9,7 +9,8 @@ from sqlalchemy.orm import Mapped, declarative_base, mapped_column
 Base = declarative_base()
 
 
-class BaseTimestampModel:
+class BaseTimestampModel(Base):
+    __abstract__ = True
     """
     Base mixin for all models providing automatic timestamp fields.
 
@@ -33,6 +34,7 @@ class BaseTimestampModel:
 
 
 class BaseModel(BaseTimestampModel):
+    __abstract__ = True
     """
     Base model mixin providing a UUID primary key and timestamps.
 

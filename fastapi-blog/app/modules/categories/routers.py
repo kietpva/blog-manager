@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends
 
-from app.core.constants import ResponseData
 from app.core.exceptions import StatusCode
 from app.dependencies.categories import get_category_service
 from app.dependencies.rbac import Admin, Authenticated
@@ -10,6 +9,7 @@ from app.modules.categories.schemas import (
     CategoryUpdate,
 )
 from app.modules.categories.services import CategoryService
+from app.utils.pagination import ResponseData
 
 router = APIRouter(prefix="/categories", tags=["Categories"])
 

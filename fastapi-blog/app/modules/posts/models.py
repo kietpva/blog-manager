@@ -5,13 +5,13 @@ from sqlalchemy import ForeignKey, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base, BaseModel, BaseTimestampModel
+from app.db.base import BaseModel, BaseTimestampModel
 
 if TYPE_CHECKING:
     from app.modules.categories.models import Category
 
 
-class PostCategory(Base, BaseTimestampModel):
+class PostCategory(BaseTimestampModel):
     """
     Association table for the many-to-many relationship between posts and categories.
 
@@ -40,7 +40,7 @@ class PostCategory(Base, BaseTimestampModel):
     )
 
 
-class Post(Base, BaseModel):
+class Post(BaseModel):
     """
     SQLAlchemy model for a blog post.
 

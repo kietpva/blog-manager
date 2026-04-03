@@ -1,4 +1,4 @@
-from app.core.exceptions import AppError, ErrorCode, NotFoundError, StatusCode
+from app.core.exceptions import BadRequestError, NotFoundError
 from app.modules.categories.models import Category
 from app.modules.categories.repositories import CategoryRepository
 from app.modules.categories.schemas import (
@@ -37,11 +37,7 @@ class CategoryService:
         """
         existing = self.repo.get_by_name(data.name)
         if existing:
-            raise AppError(
-                code=ErrorCode.BAD_REQUEST,
-                message="Category name already exists",
-                status_code=StatusCode.BAD_REQUEST,
-            )
+            raise BadRequestError(message="Category name already exists")
 
         category = Category(name=data.name, description=data.description)
 
@@ -89,14 +85,11 @@ class CategoryService:
         category = self.get_by_id(category_id)
         existing = self.repo.get_by_name(data.name)
         if existing and existing.id != category.id:
-            raise AppError(
-                code=ErrorCode.BAD_REQUEST,
-                message="Category name already exists",
-                status_code=StatusCode.BAD_REQUEST,
-            )
+            raise BadRequestError(message="Category name already exists")
 
         apply_partial_update(
-            instance=category, data=data.model_dump(exclude_unset=True)
+            instance=category,
+            data=data.model_dump(exclude_unset=True),
         )
 
         return self.repo.partial_update(category)

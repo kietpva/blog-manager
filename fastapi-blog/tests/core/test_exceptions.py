@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from app.core.exceptions import (
     AppError,
     ErrorCode,
+    ForbiddenError,
     NotFoundError,
     StatusCode,
     as_error_response,
@@ -43,14 +44,14 @@ def test_not_found_exception_defaults():
     assert exc.status_code == StatusCode.NOT_FOUND
 
 
-def test_not_found_exception_custom_message_and_code():
+def test_not_found_exception_custom_message():
     """
-    Test NotFoundException with a custom message and error code.
+    Test NotFoundError with a custom message.
 
-    Asserts that a custom code and message are properly set on exception instantiation.
+    Code and status stay the generic not-found values; only the message is overridden.
     """
-    exc = NotFoundError(message="Post not found", code=ErrorCode.POST_NOT_FOUND)
-    assert exc.code == ErrorCode.POST_NOT_FOUND
+    exc = NotFoundError(message="Post not found")
+    assert exc.code == ErrorCode.NOT_FOUND
     assert exc.message == "Post not found"
     assert exc.status_code == StatusCode.NOT_FOUND
 
@@ -122,11 +123,7 @@ def test_register_exception_handlers_triggers_custom_handlers():
 
     @app.get("/app-error")
     def raise_app_error():
-        raise AppError(
-            code=ErrorCode.FORBIDDEN,
-            message="Permission denied",
-            status_code=StatusCode.FORBIDDEN,
-        )
+        raise ForbiddenError(message="Permission denied")
 
     @app.get("/http-error")
     def raise_http_error():

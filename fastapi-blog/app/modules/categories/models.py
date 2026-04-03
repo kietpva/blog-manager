@@ -3,13 +3,13 @@ from typing import TYPE_CHECKING
 from sqlalchemy import String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.db.base import Base, BaseModel
+from app.db.base import BaseModel
 
 if TYPE_CHECKING:
     from app.modules.posts.models import Post
 
 
-class Category(Base, BaseModel):
+class Category(BaseModel):
     """
     SQLAlchemy model for a blog/category.
 

@@ -2,7 +2,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, Query
 
-from app.core.constants import PaginationResponse, ResponseData
+from app.core.constants import MAX_ITEMS_PER_PAGE
 from app.dependencies.rbac import Admin, Authenticated
 from app.dependencies.users import get_user_service
 from app.modules.users.models import User
@@ -13,13 +13,19 @@ from app.modules.users.schemas import (
     UserUpdate,
 )
 from app.modules.users.services import UserService
-from app.utils.pagination import MAX_ITEMS_PER_PAGE, Meta
+from app.utils.pagination import (
+    Meta,
+    PaginationResponse,
+    ResponseData,
+)
 
 router = APIRouter(prefix="/users", tags=["Users"])
 
 
 @router.get(
-    "/{user_id}", dependencies=[Authenticated], response_model=ResponseData[UserRead]
+    "/{user_id}",
+    dependencies=[Authenticated],
+    response_model=ResponseData[UserRead],
 )
 def get_by_id(
     user_id: uuid.UUID,
@@ -129,6 +135,8 @@ def admin_partial_update(
         ResponseData[AdminUserRead]: The updated user data, including admin-level fields.
     """
     data = service.admin_partial_update(
-        payload=user_update, user_id=user_id, current_user=me
+        payload=user_update,
+        user_id=user_id,
+        current_user=me,
     )
     return ResponseData[AdminUserRead](data=data)
