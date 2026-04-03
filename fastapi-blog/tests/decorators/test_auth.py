@@ -5,7 +5,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from app.core.exceptions import AppError, ErrorCode, StatusCode
+from app.core.exceptions import AppError, ErrorCode, NotFoundError, StatusCode
 
 
 def test_get_current_user_raises_unauthorized_when_clerk_id_missing():
@@ -25,11 +25,11 @@ def test_get_current_user_raises_unauthorized_when_clerk_id_missing():
     assert exc_info.value.status_code == StatusCode.UNAUTHORIZED
 
 
-def test_get_current_user_raises_user_not_found_when_db_returns_none(
+def test_get_current_user_raises_not_found_when_db_returns_none(
     monkeypatch: pytest.MonkeyPatch,
 ):
     """
-    Test that get_current_user raises AppError(user_not_found)
+    Test that get_current_user raises NotFoundError (404, not_found)
     when no user is found in the database for the provided clerk_id.
     """
     from app.dependencies import auth
@@ -40,12 +40,12 @@ def test_get_current_user_raises_user_not_found_when_db_returns_none(
 
     request = SimpleNamespace(state=SimpleNamespace(clerk_id="clerk_123"))
 
-    with pytest.raises(AppError) as exc_info:
+    with pytest.raises(NotFoundError) as exc_info:
         auth.get_current_user(request)
 
-    assert exc_info.value.code == ErrorCode.USER_NOT_FOUND
+    assert exc_info.value.code == ErrorCode.NOT_FOUND
     assert exc_info.value.message == "User does not exist"
-    assert exc_info.value.status_code == StatusCode.UNAUTHORIZED
+    assert exc_info.value.status_code == StatusCode.NOT_FOUND
     db.close.assert_called_once_with()
 
 

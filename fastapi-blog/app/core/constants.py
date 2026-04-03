@@ -1,34 +1,34 @@
-from __future__ import annotations
+from enum import IntEnum, StrEnum
 
-from typing import Generic, TypeVar
-
-from pydantic import BaseModel
-
-from app.utils.pagination import Meta
-
-T = TypeVar("T")
+MAX_ITEMS_PER_PAGE: int = 100
 
 
-class ResponseData(BaseModel, Generic[T]):
-    """
-    Generic API response wrapper.
+class StatusCode(IntEnum):
+    OK = 200
+    CREATED = 201
+    NO_CONTENT = 204
+    BAD_REQUEST = 400
+    UNAUTHORIZED = 401
+    FORBIDDEN = 403
+    NOT_FOUND = 404
+    METHOD_NOT_ALLOWED = 405
+    INTERNAL_SERVER_ERROR = 500
+    SERVICE_UNAVAILABLE = 503
 
-    Attributes:
-        data (T): The main response data, generic type.
-    """
 
-    data: T
+class ErrorCode(StrEnum):
+    BAD_REQUEST = "bad_request"
+    UNAUTHORIZED = "unauthorized"
+    FORBIDDEN = "forbidden"
+    NOT_FOUND = "not_found"
+    INTERNAL_SERVER_ERROR = "internal_server_error"
+    SERVICE_UNAVAILABLE = "service_unavailable"
 
 
-class PaginationResponse(ResponseData):
-    """
-    API response model for paginated results.
+class UserRole(StrEnum):
+    ADMIN = "admin"
+    USER = "user"
 
-    Inherits from ResponseData and adds a meta field containing pagination metadata.
 
-    Attributes:
-        data (T): The main response data, generic type (usually a list of items).
-        meta (Meta): Metadata with pagination information.
-    """
-
-    meta: Meta
+class ClerkEventEnum(StrEnum):
+    USER_CREATED = "user.created"

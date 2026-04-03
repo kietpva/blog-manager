@@ -7,6 +7,7 @@ from app.core.exceptions import (
     AppError,
     ErrorCode,
     StatusCode,
+    UnauthorizedError,
     as_error_response,
 )
 from app.core.jwt import verify_auth_token
@@ -23,10 +24,8 @@ def register_auth_middleware(app: FastAPI) -> None:
                 parts = auth_header.split(" ")
 
                 if len(parts) != 2 or parts[0] != "Bearer":
-                    raise AppError(
-                        code=ErrorCode.UNAUTHORIZED,
-                        message="Invalid authorization header format",
-                        status_code=StatusCode.UNAUTHORIZED,
+                    raise UnauthorizedError(
+                        message="Invalid authorization header format"
                     )
 
                 token = parts[1]
@@ -34,11 +33,7 @@ def register_auth_middleware(app: FastAPI) -> None:
 
                 clerk_id = payload.get("sub") or payload.get("user_id")
                 if not clerk_id:
-                    raise AppError(
-                        code=ErrorCode.UNAUTHORIZED,
-                        message="Token missing user id",
-                        status_code=StatusCode.UNAUTHORIZED,
-                    )
+                    raise UnauthorizedError(message="Token missing user id")
 
                 request.state.auth = payload
                 request.state.clerk_id = clerk_id

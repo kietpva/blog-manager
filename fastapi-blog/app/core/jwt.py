@@ -5,7 +5,7 @@ from fastapi.security import HTTPBearer
 from jose import JWTError, jwt
 
 from app.core.config import settings
-from app.core.exceptions import AppError, ErrorCode, StatusCode
+from app.core.exceptions import ServiceUnavailableError, UnauthorizedError
 
 security = HTTPBearer()
 
@@ -32,11 +32,7 @@ def get_jwks() -> dict:
         return _jwks_cache
 
     except Exception:
-        raise AppError(
-            code=ErrorCode.SERVICE_UNAVAILABLE,
-            message="Unable to fetch JWKS",
-            status_code=StatusCode.SERVICE_UNAVAILABLE,
-        )
+        raise ServiceUnavailableError(message="Unable to fetch JWKS")
 
 
 def get_public_key(token: str) -> dict:
@@ -46,31 +42,19 @@ def get_public_key(token: str) -> dict:
     try:
         header = jwt.get_unverified_header(token)
     except JWTError:
-        raise AppError(
-            code=ErrorCode.UNAUTHORIZED,
-            message="Invalid token header",
-            status_code=StatusCode.UNAUTHORIZED,
-        )
+        raise UnauthorizedError(message="Invalid token header")
 
     kid = header.get("kid")
 
     if not kid:
-        raise AppError(
-            code=ErrorCode.UNAUTHORIZED,
-            message="Token missing kid",
-            status_code=StatusCode.UNAUTHORIZED,
-        )
+        raise UnauthorizedError(message="Token missing kid")
 
     jwks = get_jwks()
 
     for key in jwks["keys"]:
         if key["kid"] == kid:
             return key
-    raise AppError(
-        code=ErrorCode.UNAUTHORIZED,
-        message="Public key not found",
-        status_code=StatusCode.UNAUTHORIZED,
-    )
+    raise UnauthorizedError(message="Public key not found")
 
 
 def verify_auth_token(token: str) -> dict:
@@ -91,8 +75,4 @@ def verify_auth_token(token: str) -> dict:
         return payload
 
     except JWTError:
-        raise AppError(
-            code=ErrorCode.UNAUTHORIZED,
-            message="Invalid or expired token",
-            status_code=StatusCode.UNAUTHORIZED,
-        )
+        raise UnauthorizedError(message="Invalid or expired token")

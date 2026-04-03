@@ -86,19 +86,6 @@ def test_clerk_webhook_creates_user_on_user_created_event(monkeypatch):
     service = Mock()
     client = _build_client(service)
 
-    def fake_extract_email(data):
-        return data["email_addresses"][0]["email_address"]
-
-    def fake_extract_first_name(data):
-        return data.get("first_name", "")
-
-    def fake_extract_last_name(data):
-        return data.get("last_name", "")
-
-    monkeypatch.setattr(routers, "extract_email", fake_extract_email)
-    monkeypatch.setattr(routers, "extract_first_name", fake_extract_first_name)
-    monkeypatch.setattr(routers, "extract_last_name", fake_extract_last_name)
-
     class FakeWebhook:
         def __init__(self, _secret):
             pass

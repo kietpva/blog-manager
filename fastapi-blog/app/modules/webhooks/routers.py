@@ -1,19 +1,13 @@
-import enum
 import logging
 
 from fastapi import APIRouter, Depends, Request, Response, status
 from svix.webhooks import Webhook, WebhookVerificationError
 
 from app.core.config import settings
+from app.core.constants import ClerkEventEnum
 from app.dependencies.users import get_user_service
 from app.modules.users.schemas import UserCreate
 from app.modules.users.services import UserService
-from app.utils.helpers import extract_email, extract_first_name, extract_last_name
-
-
-class ClerkEventEnum(enum.Enum):
-    USER_CREATED = "user.created"
-
 
 secret = settings.CLERK_WEBHOOK_SECRET
 
@@ -48,9 +42,11 @@ async def clerk_webhook(
     if not auth_id:
         return
 
-    email = extract_email(data)
-    first_name = extract_first_name(data)
-    last_name = extract_last_name(data)
+    emails = data.get("email_addresses", [])
+
+    email = emails[0].get("email_address")
+    first_name = data.get("first_name") or ""
+    last_name = data.get("last_name") or ""
 
     # Clerk may provide `event["type"]` either as a string (e.g. "user.created")
     # or as an Enum member depending on the caller/test.

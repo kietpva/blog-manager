@@ -1,4 +1,4 @@
-from app.core.exceptions import AppError, ErrorCode, StatusCode
+from app.core.exceptions import ForbiddenError
 from app.modules.users.models import UserRole
 
 
@@ -20,8 +20,4 @@ def check_permission(current_user, owner_id):
     if current_user.id == owner_id:
         return True
 
-    raise AppError(
-        code=ErrorCode.FORBIDDEN,
-        message="Permission denied",
-        status_code=StatusCode.FORBIDDEN,
-    )
+    raise ForbiddenError(message="Permission denied")

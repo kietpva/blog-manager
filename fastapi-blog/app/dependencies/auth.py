@@ -1,7 +1,11 @@
 from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from app.core.exceptions import AppError, ErrorCode, StatusCode
+from app.core.exceptions import (
+    ForbiddenError,
+    NotFoundError,
+    UnauthorizedError,
+)
 from app.db.session import SessionLocal
 from app.modules.users.models import User
 
@@ -14,11 +18,7 @@ def get_current_user(
     clerk_id: str | None = getattr(request.state, "clerk_id", None)
 
     if not clerk_id:
-        raise AppError(
-            code=ErrorCode.UNAUTHORIZED,
-            message="Not authenticated",
-            status_code=StatusCode.UNAUTHORIZED,
-        )
+        raise UnauthorizedError(message="Not authenticated")
 
     db = SessionLocal()
     try:
@@ -27,20 +27,12 @@ def get_current_user(
         db.close()
 
     if not user:
-        raise AppError(
-            code=ErrorCode.USER_NOT_FOUND,
-            message="User does not exist",
-            status_code=StatusCode.UNAUTHORIZED,
-        )
+        raise NotFoundError(message="User does not exist")
 
     return user
 
 
 def get_current_active_user(user: User = Depends(get_current_user)) -> User:
     if not user.is_active:
-        raise AppError(
-            code=ErrorCode.FORBIDDEN,
-            message="Inactive user",
-            status_code=StatusCode.FORBIDDEN,
-        )
+        raise ForbiddenError(message="Inactive user")
     return user

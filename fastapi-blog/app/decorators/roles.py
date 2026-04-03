@@ -4,7 +4,7 @@ from collections.abc import Callable
 
 from fastapi import Depends
 
-from app.core.exceptions import AppError, ErrorCode, StatusCode
+from app.core.exceptions import ForbiddenError
 from app.dependencies.auth import get_current_active_user
 from app.modules.users.models import User, UserRole
 
@@ -25,11 +25,7 @@ def require_roles(*allowed_roles: UserRole) -> Callable[[User], User]:
         )
 
         if user_role not in allowed_roles:
-            raise AppError(
-                code=ErrorCode.FORBIDDEN,
-                message="Permission denied",
-                status_code=StatusCode.FORBIDDEN,
-            )
+            raise ForbiddenError(message="Permission denied")
 
         return current_user
 

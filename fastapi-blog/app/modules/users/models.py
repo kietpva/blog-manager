@@ -1,19 +1,13 @@
 from __future__ import annotations
 
-import enum
-
 from sqlalchemy import Boolean, Enum, String
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.db.base import Base, BaseModel
+from app.core.constants import UserRole
+from app.db.base import BaseModel
 
 
-class UserRole(enum.Enum):
-    ADMIN = "admin"
-    USER = "user"
-
-
-class User(Base, BaseModel):
+class User(BaseModel):
     __tablename__ = "users"
 
     auth_id: Mapped[str] = mapped_column(
