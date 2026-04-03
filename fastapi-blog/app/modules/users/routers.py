@@ -7,8 +7,6 @@ from app.dependencies.rbac import Admin, Authenticated
 from app.dependencies.users import get_user_service
 from app.modules.users.models import User
 from app.modules.users.schemas import (
-    AdminUserRead,
-    AdminUserUpdate,
     UserRead,
     UserUpdate,
 )
@@ -107,36 +105,3 @@ def partial_update(
     """
     data = service.partial_update(payload=user_update, user_id=user_id, current_user=me)
     return ResponseData[UserRead](data=data)
-
-
-@router.patch(
-    "/admin/{user_id}",
-    dependencies=[Admin],
-    response_model=ResponseData[AdminUserRead],
-)
-def admin_partial_update(
-    user_id: uuid.UUID,
-    user_update: AdminUserUpdate,
-    service: UserService = Depends(get_user_service),
-    me: User = Authenticated,
-):
-    """
-    Update another user's profile as an admin.
-
-    Enables admins to partially update the details of any user. Requires admin privileges.
-
-    Args:
-        user_id (uuid.UUID): The UUID of the user to update.
-        user_update (AdminUserUpdate): Partial update payload supporting admin-level fields.
-        service (UserService): Dependency injected user service.
-        me (User): The currently authenticated admin user.
-
-    Returns:
-        ResponseData[AdminUserRead]: The updated user data, including admin-level fields.
-    """
-    data = service.admin_partial_update(
-        payload=user_update,
-        user_id=user_id,
-        current_user=me,
-    )
-    return ResponseData[AdminUserRead](data=data)

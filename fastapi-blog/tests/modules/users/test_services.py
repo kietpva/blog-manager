@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from app.core.exceptions import AppError, ErrorCode, NotFoundError, StatusCode
 from app.modules.users.models import User, UserRole
 from app.modules.users.repositories import UserRepository
-from app.modules.users.schemas import AdminUserUpdate, UserCreate, UserUpdate
+from app.modules.users.schemas import UserCreate, UserUpdate
 from app.modules.users.services import UserService
 from app.utils.pagination import PaginationInfo
 
@@ -271,63 +271,3 @@ def test_partial_update_raises_not_found_when_target_missing(
 
     assert exc_info.value.message == "User not found"
     repo.partial_update.assert_not_called()
-
-
-def test_admin_partial_update_denies_non_admin(service: UserService, repo: Mock):
-    """
-    Test that service.admin_partial_update raises AppError
-    when a non-admin attempts to update another user.
-
-    Args:
-        service (UserService): The UserService under test.
-        repo (Mock): The mocked user repository.
-    """
-    current_user = SimpleNamespace(id="user-id", role=UserRole.USER)
-
-    with pytest.raises(AppError) as exc_info:
-        service.admin_partial_update(
-            payload=AdminUserUpdate(role=UserRole.ADMIN),
-            user_id="target-id",
-            current_user=current_user,
-        )
-
-    assert exc_info.value.code == ErrorCode.FORBIDDEN
-    assert exc_info.value.message == "Permission denied"
-    assert exc_info.value.status_code == StatusCode.FORBIDDEN
-    repo.get_by_id.assert_not_called()
-
-
-def test_admin_partial_update_updates_target_for_admin(
-    service: UserService, repo: Mock, monkeypatch: pytest.MonkeyPatch
-):
-    """
-    Test that service.admin_partial_update allows admin users to update a target user
-    and calls the apply_partial_update and repository's partial_update.
-
-    Args:
-        service (UserService): The UserService under test.
-        repo (Mock): The mocked user repository.
-        monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch for patching dependencies.
-    """
-    current_user = SimpleNamespace(id="admin-id", role=UserRole.ADMIN)
-    target_user = make_user(auth_id="auth_target")
-    repo.get_by_id.return_value = target_user
-    repo.partial_update.return_value = target_user
-    payload = AdminUserUpdate(role=UserRole.ADMIN, is_active=True)
-    apply_partial_update_mock = Mock(return_value=None)
-    monkeypatch.setattr(
-        "app.modules.users.services.apply_partial_update", apply_partial_update_mock
-    )
-
-    result = service.admin_partial_update(
-        payload=payload,
-        user_id="target-id",
-        current_user=current_user,
-    )
-
-    assert result is target_user
-    apply_partial_update_mock.assert_called_once_with(
-        instance=target_user,
-        data=payload.model_dump(exclude_unset=True),
-    )
-    repo.partial_update.assert_called_once_with(target_user)
