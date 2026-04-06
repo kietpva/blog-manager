@@ -11,6 +11,10 @@ from app.core.exceptions import (
     as_error_response,
 )
 from app.core.jwt import verify_auth_token
+from app.db.session import SessionLocal
+from app.modules.users.repositories import UserRepository
+from app.modules.users.schemas import UserCreate
+from app.modules.users.services import UserService
 
 
 def register_auth_middleware(app: FastAPI) -> None:
@@ -31,12 +35,36 @@ def register_auth_middleware(app: FastAPI) -> None:
                 token = parts[1]
                 payload = verify_auth_token(token)
 
-                clerk_id = payload.get("sub") or payload.get("user_id")
-                if not clerk_id:
-                    raise UnauthorizedError(message="Token missing user id")
+                auth_id = payload.get("sub") or payload.get("user_id")
+                if not auth_id:
+                    raise UnauthorizedError(message="Token missing auth id")
 
                 request.state.auth = payload
-                request.state.clerk_id = clerk_id
+                request.state.clerk_id = auth_id
+
+                email = payload.get("email")
+                if not email:
+                    raise UnauthorizedError(message="Email missing from token")
+
+                first_name = payload.get("first_name") or ""
+                last_name = payload.get("last_name") or ""
+
+                user_data = UserCreate(
+                    auth_id=auth_id,
+                    email=email,
+                    first_name=first_name,
+                    last_name=last_name,
+                )
+
+                db = SessionLocal()
+                try:
+                    repo = UserRepository(db)
+                    service = UserService(repo)
+                    user = service.create(user_data)
+                    db.expunge(user)
+                    request.state.current_user = user
+                finally:
+                    db.close()
 
         except AppError as exc:
             logging.warning(
