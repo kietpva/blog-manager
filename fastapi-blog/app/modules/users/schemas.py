@@ -9,6 +9,7 @@ class UserBase(BaseModel):
     email: EmailStr
     first_name: str | None = None
     last_name: str | None = None
+    is_active: bool = True
 
 
 class UserCreate(UserBase):
@@ -18,6 +19,7 @@ class UserCreate(UserBase):
 class UserUpdate(BaseModel):
     first_name: str | None = None
     last_name: str | None = None
+    is_active: bool | None = None
 
 
 class UserRead(UserBase):

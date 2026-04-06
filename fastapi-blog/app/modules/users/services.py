@@ -56,6 +56,7 @@ class UserService:
             email=str(payload.email),
             first_name=payload.first_name,
             last_name=payload.last_name,
+            is_active=payload.is_active,
         )
 
         try:
@@ -132,3 +133,8 @@ class UserService:
         apply_partial_update(instance=user, data=payload.model_dump(exclude_unset=True))
 
         return self.repo.partial_update(user)
+
+    def update_by_webhooks(self, auth_id: str, payload: UserUpdate) -> User:
+        user = self.repo.get_by_auth_id(auth_id=auth_id)
+
+        self.partial_update(payload=payload, user_id=user.id, current_user=user)
