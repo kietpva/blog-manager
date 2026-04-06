@@ -2,7 +2,7 @@ import uuid
 
 from fastapi import APIRouter, Depends, Query
 
-from app.core.constants import MAX_ITEMS_PER_PAGE
+from app.core.constants import MAX_ITEMS_PER_PAGE, SortOrder
 from app.dependencies.rbac import Admin, Authenticated
 from app.dependencies.users import get_user_service
 from app.modules.users.models import User
@@ -55,6 +55,7 @@ def get_by_id(
 def users(
     limit: int = Query(10, ge=1, le=MAX_ITEMS_PER_PAGE),
     offset: int = Query(0, ge=0),
+    order_by: SortOrder = SortOrder.NEWEST,
     service: UserService = Depends(get_user_service),
 ):
     """
@@ -70,7 +71,7 @@ def users(
     Returns:
         PaginationResponse[List[UserRead]]: Paginated user list and metadata.
     """
-    pagination, items = service.list(limit=limit, offset=offset)
+    pagination, items = service.list(limit=limit, offset=offset, order_by=order_by)
     return PaginationResponse[list[UserRead]](
         data=items,
         meta=Meta(pagination=pagination),

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from app.db.repositories import BaseRepository
 from app.modules.users.models import User
-from app.utils.pagination import PaginationInfo
 
 
 class UserRepository(BaseRepository[User, str]):
@@ -19,16 +18,3 @@ class UserRepository(BaseRepository[User, str]):
             User | None: The user if found, otherwise None.
         """
         return self.db.query(User).filter(User.auth_id == auth_id).one_or_none()
-
-    def list(self, limit: int, offset: int) -> tuple[PaginationInfo, list[User]]:
-        """
-        Retrieve a paginated list of users.
-
-        Returns:
-            tuple[PaginationInfo, list[User]]: (pagination, items)
-        """
-        return super().list(
-            limit,
-            offset,
-            order_by=User.created_at.desc(),
-        )

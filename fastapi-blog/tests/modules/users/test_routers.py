@@ -6,6 +6,7 @@ from uuid import uuid4
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from app.core.constants import SortOrder
 from app.core.exceptions import NotFoundError, register_exception_handlers
 from app.dependencies.rbac import Admin, Authenticated
 from app.dependencies.users import get_user_service
@@ -148,7 +149,11 @@ def test_list_returns_paginated_users():
     assert body["data"][0]["id"] == str(user_id)
     assert body["meta"]["pagination"]["total"] == 1
     assert body["meta"]["pagination"]["has_next"] is False
-    service.list.assert_called_once_with(limit=10, offset=0)
+    service.list.assert_called_once_with(
+        limit=10,
+        offset=0,
+        order_by=SortOrder.NEWEST,
+    )
 
 
 def test_partial_update_calls_service_and_returns_user():

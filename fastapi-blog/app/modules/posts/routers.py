@@ -2,7 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query
 
-from app.core.constants import MAX_ITEMS_PER_PAGE
+from app.core.constants import MAX_ITEMS_PER_PAGE, SortOrder
 from app.core.exceptions import StatusCode
 from app.dependencies.auth import get_current_active_user
 from app.dependencies.posts import get_post_service
@@ -74,6 +74,7 @@ def get_by_id(
 def posts(
     limit: int = Query(10, ge=1, le=MAX_ITEMS_PER_PAGE),
     offset: int = Query(0, ge=0),
+    order_by: SortOrder = SortOrder.NEWEST,
     service: PostService = Depends(get_post_service),
 ):
     """
@@ -88,7 +89,7 @@ def posts(
         PaginationResponse[list[PostResponse]]: Paginated post list and pagination info.
     """
 
-    pagination, items = service.list(limit, offset)
+    pagination, items = service.list(limit, offset, order_by)
 
     return PaginationResponse[list[PostResponse]](
         data=items,

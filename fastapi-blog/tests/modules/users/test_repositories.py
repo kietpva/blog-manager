@@ -1,5 +1,6 @@
 from unittest.mock import Mock, patch
 
+from app.core.constants import SortOrder
 from app.modules.users.models import User
 from app.modules.users.repositories import UserRepository
 from app.utils.pagination import PaginationInfo
@@ -68,4 +69,4 @@ def test_list_delegates_to_base_repository_with_created_at_desc_order():
     args, kwargs = base_list_mock.call_args
     assert args == (10, 0)
     assert "order_by" in kwargs
-    assert "created_at" in str(kwargs["order_by"])
+    assert kwargs["order_by"] == SortOrder.NEWEST

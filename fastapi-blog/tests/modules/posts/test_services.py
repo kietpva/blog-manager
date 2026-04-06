@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 
 import pytest
 
+from app.core.constants import SortOrder
 from app.core.exceptions import NotFoundError
 from app.modules.categories.models import Category
 from app.modules.posts.models import Post
@@ -166,11 +167,13 @@ def test_list_returns_pagination_and_items(service: PostService, repo: Mock):
     items = [make_post(author_id=uuid4())]
     repo.list.return_value = (page, items)
 
-    result_page, result_items = service.list(limit=10, offset=0)
+    result_page, result_items = service.list(
+        limit=10, offset=0, order_by=SortOrder.NEWEST
+    )
 
     assert result_page is page
     assert result_items == items
-    repo.list.assert_called_once_with(10, 0)
+    repo.list.assert_called_once_with(10, 0, order_by=SortOrder.NEWEST)
 
 
 def test_partial_update_updates_title_and_categories(

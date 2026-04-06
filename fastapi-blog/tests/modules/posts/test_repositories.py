@@ -1,6 +1,7 @@
 from unittest.mock import Mock, patch
 from uuid import uuid4
 
+from app.core.constants import SortOrder
 from app.modules.categories.models import Category
 from app.modules.posts.models import Post
 from app.modules.posts.repositories import PostRepository
@@ -40,7 +41,7 @@ def test_list_delegates_to_base_repository_with_order_and_selectinload():
     args, kwargs = base_list_mock.call_args
     assert args == (10, 0)
     assert "order_by" in kwargs
-    assert "created_at" in str(kwargs["order_by"])
+    assert kwargs["order_by"] == SortOrder.NEWEST
 
     assert "options" in kwargs
     assert kwargs["options"] is not None

@@ -1,5 +1,6 @@
 from uuid import UUID
 
+from app.core.constants import SortOrder
 from app.core.exceptions import NotFoundError
 from app.decorators.permissions import check_permission
 from app.modules.posts.models import Post
@@ -69,7 +70,12 @@ class PostService:
             raise NotFoundError(message="Post not found")
         return post
 
-    def list(self, limit: int, offset: int) -> tuple[PaginationInfo, list[Post]]:
+    def list(
+        self,
+        limit: int,
+        offset: int,
+        order_by: SortOrder = SortOrder.NEWEST,
+    ) -> tuple[PaginationInfo, list[Post]]:
         """
         Retrieve a paginated list of posts, including pagination metadata.
 
@@ -81,7 +87,7 @@ class PostService:
             tuple[PaginationInfo, list[Post]]: Pagination metadata and list of Post instances.
         """
 
-        return self.repo.list(limit, offset)
+        return self.repo.list(limit, offset, order_by=order_by)
 
     def partial_update(self, post_id: UUID, payload: PostUpdate, current_user) -> Post:
         """
