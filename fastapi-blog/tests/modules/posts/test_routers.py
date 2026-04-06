@@ -6,6 +6,7 @@ from uuid import uuid4
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
+from app.core.constants import SortOrder
 from app.core.exceptions import NotFoundError, register_exception_handlers
 from app.dependencies.posts import get_post_service
 from app.dependencies.rbac import Authenticated
@@ -114,7 +115,7 @@ def test_list_returns_paginated_posts():
     assert body["data"][0]["id"] == str(post_id)
     assert body["meta"]["pagination"]["total"] == 1
     assert body["meta"]["pagination"]["has_next"] is False
-    service.list.assert_called_once_with(10, 0)
+    service.list.assert_called_once_with(10, 0, SortOrder.NEWEST)
 
 
 def test_create_calls_service_and_returns_post():

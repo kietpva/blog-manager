@@ -1,5 +1,6 @@
 from sqlalchemy.exc import IntegrityError
 
+from app.core.constants import SortOrder
 from app.core.exceptions import (
     BadRequestError,
     NotFoundError,
@@ -85,7 +86,12 @@ class UserService:
 
         return user
 
-    def list(self, limit: int, offset: int) -> tuple[PaginationInfo, list[User]]:
+    def list(
+        self,
+        limit: int,
+        offset: int,
+        order_by: SortOrder = SortOrder.NEWEST,
+    ) -> tuple[PaginationInfo, list[User]]:
         """
         List users with pagination support.
 
@@ -97,7 +103,7 @@ class UserService:
             tuple[PaginationInfo, list[User]]: Pagination metadata and user list.
         """
 
-        return self.repo.list(limit, offset)
+        return self.repo.list(limit, offset, order_by=order_by)
 
     def partial_update(
         self,

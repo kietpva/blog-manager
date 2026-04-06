@@ -4,6 +4,7 @@ from typing import Any, Generic, TypeVar
 
 from sqlalchemy.orm import Session
 
+from app.core.constants import SortOrder
 from app.utils.pagination import PaginationInfo, build_pagination
 
 ModelType = TypeVar("ModelType")
@@ -53,10 +54,10 @@ class BaseRepository(Generic[ModelType, IdType]):
 
     def list(
         self,
-        limit: int,
-        offset: int,
+        limit: int | None = None,
+        offset: int | None = None,
         *,
-        order_by: Any = None,
+        order_by: SortOrder | None = None,
         options: list[Any] | None = None,
     ) -> tuple[PaginationInfo, list[ModelType]]:
         """
@@ -65,18 +66,23 @@ class BaseRepository(Generic[ModelType, IdType]):
         Returns:
             tuple[PaginationInfo, list[ModelType]]: (pagination, items)
         """
-        base_query = self.db.query(self.model)
-        total = base_query.count()
 
-        page_query = self.db.query(self.model)
-        if options:
-            page_query = page_query.options(*options)
-        if order_by is not None:
-            page_query = page_query.order_by(order_by)
+        query = self._build_base_query(options)
+        query = self._apply_sorting(query, order_by)
 
-        items = page_query.limit(limit).offset(offset).all()
+        offset, limit = self._normalize_pagination(offset, limit)
 
-        pagination = build_pagination(total=total, limit=limit, offset=offset)
+        total = query.count()
+
+        query = self._apply_pagination(query, offset, limit)
+        items = query.all()
+
+        pagination = build_pagination(
+            total=total,
+            limit=limit if limit is not None else total,
+            offset=offset,
+        )
+
         return pagination, items
 
     def partial_update(self, entity: ModelType) -> ModelType:
@@ -102,3 +108,94 @@ class BaseRepository(Generic[ModelType, IdType]):
         """
         self.db.delete(entity)
         self.db.commit()
+
+    def _build_base_query(self, options: list[Any] | None):
+        """
+        Construct the base SQLAlchemy query for the repository model.
+
+        Applies loading options if provided (e.g., eager loading relationships).
+
+        Args:
+            options (list[Any] | None): Optional SQLAlchemy loader options.
+
+        Returns:
+            Query: The base SQLAlchemy query object for the model.
+        """
+        query = self.db.query(self.model)
+
+        if options:
+            query = query.options(*options)
+
+        return query
+
+    def _apply_sorting(self, query, order_by: SortOrder | None):
+        """
+        Apply sorting to the given SQLAlchemy query based on the provided order_by parameter.
+
+        Uses the model's "created_at" column to sort by newest or oldest order.
+        If no order_by is provided or if the model lacks a "created_at" attribute,
+        the query is returned unmodified.
+
+        Args:
+            query: The SQLAlchemy query object to modify.
+            order_by (SortOrder | None): The sorting direction,
+            typically SortOrder.NEWEST or SortOrder.OLDEST.
+
+        Returns:
+            The SQLAlchemy query object with ordering applied if applicable.
+        """
+        if not order_by or not hasattr(self.model, "created_at"):
+            return query
+
+        created_at_col = getattr(self.model, "created_at")
+
+        return query.order_by(
+            created_at_col.desc()
+            if order_by == SortOrder.NEWEST
+            else created_at_col.asc()
+        )
+
+    def _normalize_pagination(
+        self,
+        offset: int | None,
+        limit: int | None,
+    ) -> tuple[int, int | None]:
+        """
+        Normalize and validate pagination parameters for query offset and limit.
+
+        Ensures that offset is a non-negative integer and
+        that limit is either a non-negative integer or None.
+        Converts None or invalid (negative) values to safe defaults.
+
+        Args:
+            offset (int | None): The offset value to normalize.
+            Defaults to 0 if None or less than 0.
+            limit (int | None): The limit value to normalize.
+            Stays None if None, otherwise ensured non-negative.
+
+        Returns:
+            tuple[int, int | None]: Tuple of normalized (offset, limit).
+        """
+        offset = max(offset or 0, 0)
+        limit = None if limit is None else max(limit, 0)
+
+        return offset, limit
+
+    def _apply_pagination(self, query, offset: int, limit: int | None):
+        """
+        Apply pagination to the given SQLAlchemy query.
+
+        Offsets the result set and limits the number of rows returned, if a limit is specified.
+
+        Args:
+            query: The SQLAlchemy query object to modify.
+            offset (int): The number of rows to skip before returning results.
+            limit (int | None): The maximum number of rows to return. If None, no limit is applied.
+
+        Returns:
+            The SQLAlchemy query object with offset and limit applied.
+        """
+        if limit is not None:
+            query = query.limit(limit)
+
+        return query.offset(offset)

@@ -33,3 +33,8 @@ class UserRole(StrEnum):
 class ClerkEventEnum(StrEnum):
     USER_CREATED = "user.created"
     USER_UPDATED = "user.updated"
+
+
+class SortOrder(StrEnum):
+    NEWEST = "newest"
+    OLDEST = "oldest"

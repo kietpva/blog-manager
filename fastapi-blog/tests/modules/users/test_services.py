@@ -4,6 +4,7 @@ from unittest.mock import Mock
 import pytest
 from sqlalchemy.exc import IntegrityError
 
+from app.core.constants import SortOrder
 from app.core.exceptions import AppError, ErrorCode, NotFoundError, StatusCode
 from app.modules.users.models import User, UserRole
 from app.modules.users.repositories import UserRepository
@@ -193,11 +194,13 @@ def test_list_returns_pagination_and_items(service: UserService, repo: Mock):
     items = [make_user()]
     repo.list.return_value = (page, items)
 
-    result_page, result_items = service.list(limit=10, offset=0)
+    result_page, result_items = service.list(
+        limit=10, offset=0, order_by=SortOrder.NEWEST
+    )
 
     assert result_page is page
     assert result_items == items
-    repo.list.assert_called_once_with(10, 0)
+    repo.list.assert_called_once_with(10, 0, order_by=SortOrder.NEWEST)
 
 
 def test_partial_update_calls_check_permission_and_repo_update(

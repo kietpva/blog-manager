@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from unittest.mock import Mock
 
+from app.core.constants import SortOrder
 from app.db.repositories import BaseRepository
 from app.utils.pagination import PaginationInfo
 
@@ -17,6 +18,7 @@ class _FakeModel:
     """Minimal model type with an `id` usable in filter(model.id == ...)."""
 
     id = 1
+    created_at = Mock()
 
 
 class _FakeRepo(BaseRepository[_FakeModel, int]):
@@ -103,9 +105,9 @@ def test_list_without_options_or_order_builds_pagination_and_items():
     limit_chain.offset.assert_called_once_with(4)
 
 
-def test_list_with_options_and_order_by():
+def test_list_with_options_and_enum_order_by():
     """
-    Test that list (with options and order_by):
+    Test that list (with options and enum order_by):
     - Applies options (e.g., eager loads),
     - Applies order_by,
     - Returns correct pagination and items,
@@ -125,19 +127,71 @@ def test_list_with_options_and_order_by():
     db.query.side_effect = [count_query, page_query]
 
     opt = object()
-    order = object()
     repo = _FakeRepo(db)
     pagination, result_items = repo.list(
         limit=5,
         offset=0,
-        order_by=order,
+        order_by=SortOrder.NEWEST,
         options=[opt],
     )
 
     assert pagination.total == 3
     assert result_items == []
     page_query.options.assert_called_once_with(opt)
-    page_query.order_by.assert_called_once_with(order)
+    _FakeModel.created_at.desc.assert_called_once_with()
+    page_query.order_by.assert_called_once()
+
+
+def test_list_without_limit_returns_all_items():
+    """
+    Test that list() without limit/offset returns all items.
+    """
+    db = Mock()
+    count_query = Mock()
+    count_query.count.return_value = 2
+
+    page_query = Mock()
+    offset_chain = Mock()
+    page_query.offset.return_value = offset_chain
+    items = [object(), object()]
+    offset_chain.all.return_value = items
+
+    db.query.side_effect = [count_query, page_query]
+
+    repo = _FakeRepo(db)
+    pagination, result_items = repo.list()
+
+    assert result_items == items
+    assert pagination.total == 2
+    assert pagination.limit == 2
+    assert pagination.offset == 0
+    page_query.offset.assert_called_once_with(0)
+    page_query.limit.assert_not_called()
+
+
+def test_list_can_sort_by_created_at_newest():
+    """
+    Test that list can order by created_at descending when requested.
+    """
+    _FakeModel.created_at.desc.reset_mock()
+
+    db = Mock()
+    count_query = Mock()
+    count_query.count.return_value = 1
+
+    page_query = Mock()
+    page_query.order_by.return_value = page_query
+    limit_chain = Mock()
+    page_query.limit.return_value = limit_chain
+    limit_chain.offset.return_value.all.return_value = []
+
+    db.query.side_effect = [count_query, page_query]
+
+    repo = _FakeRepo(db)
+    repo.list(limit=10, offset=0, order_by=SortOrder.NEWEST)
+
+    _FakeModel.created_at.desc.assert_called_once_with()
+    page_query.order_by.assert_called_once()
 
 
 def test_partial_update_commits_refreshes_and_returns_entity():
