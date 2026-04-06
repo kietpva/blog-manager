@@ -6,7 +6,7 @@ from svix.webhooks import Webhook, WebhookVerificationError
 from app.core.config import settings
 from app.core.constants import ClerkEventEnum
 from app.dependencies.users import get_user_service
-from app.modules.users.schemas import UserCreate
+from app.modules.users.schemas import UserCreate, UserUpdate
 from app.modules.users.services import UserService
 
 secret = settings.CLERK_WEBHOOK_SECRET
@@ -47,6 +47,7 @@ async def clerk_webhook(
     email = emails[0].get("email_address")
     first_name = data.get("first_name") or ""
     last_name = data.get("last_name") or ""
+    is_active = data.get("banned") or False
 
     # Clerk may provide `event["type"]` either as a string (e.g. "user.created")
     # or as an Enum member depending on the caller/test.
@@ -57,8 +58,22 @@ async def clerk_webhook(
     if normalized_event_type == ClerkEventEnum.USER_CREATED.value:
         service.create(
             UserCreate(
-                auth_id=auth_id, email=email, first_name=first_name, last_name=last_name
+                auth_id=auth_id,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                is_active=is_active,
             )
+        )
+
+    if normalized_event_type == ClerkEventEnum.USER_UPDATED.value:
+        service.update_by_webhooks(
+            auth_id,
+            UserUpdate(
+                first_name=first_name,
+                last_name=last_name,
+                is_active=not is_active,
+            ),
         )
 
     return
