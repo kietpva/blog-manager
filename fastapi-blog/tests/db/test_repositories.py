@@ -78,16 +78,14 @@ def test_list_without_options_or_order_builds_pagination_and_items():
     - Returns correct PaginationInfo and result items.
     """
     db = Mock()
-    count_query = Mock()
-    count_query.count.return_value = 10
+    query = Mock()
+    query.count.return_value = 10
 
-    page_query = Mock()
     limit_chain = Mock()
-    page_query.limit.return_value = limit_chain
+    query.limit.return_value = limit_chain
     items = [object(), object()]
     limit_chain.offset.return_value.all.return_value = items
-
-    db.query.side_effect = [count_query, page_query]
+    db.query.return_value = query
 
     repo = _FakeRepo(db)
     pagination, result_items = repo.list(limit=2, offset=4)
@@ -100,8 +98,9 @@ def test_list_without_options_or_order_builds_pagination_and_items():
     assert pagination.has_prev is True
     assert result_items == items
 
-    assert db.query.call_count == 2
-    page_query.limit.assert_called_once_with(2)
+    db.query.assert_called_once_with(_FakeModel)
+    query.count.assert_called_once_with()
+    query.limit.assert_called_once_with(2)
     limit_chain.offset.assert_called_once_with(4)
 
 
@@ -114,17 +113,14 @@ def test_list_with_options_and_enum_order_by():
     - Calls underlying methods as expected.
     """
     db = Mock()
-    count_query = Mock()
-    count_query.count.return_value = 3
-
     page_query = Mock()
+    page_query.count.return_value = 3
     page_query.options.return_value = page_query
     page_query.order_by.return_value = page_query
     limit_chain = Mock()
     page_query.limit.return_value = limit_chain
     limit_chain.offset.return_value.all.return_value = []
-
-    db.query.side_effect = [count_query, page_query]
+    db.query.return_value = page_query
 
     opt = object()
     repo = _FakeRepo(db)
@@ -140,6 +136,7 @@ def test_list_with_options_and_enum_order_by():
     page_query.options.assert_called_once_with(opt)
     _FakeModel.created_at.desc.assert_called_once_with()
     page_query.order_by.assert_called_once()
+    page_query.count.assert_called_once_with()
 
 
 def test_list_without_limit_returns_all_items():
@@ -147,16 +144,13 @@ def test_list_without_limit_returns_all_items():
     Test that list() without limit/offset returns all items.
     """
     db = Mock()
-    count_query = Mock()
-    count_query.count.return_value = 2
-
     page_query = Mock()
+    page_query.count.return_value = 2
     offset_chain = Mock()
     page_query.offset.return_value = offset_chain
     items = [object(), object()]
     offset_chain.all.return_value = items
-
-    db.query.side_effect = [count_query, page_query]
+    db.query.return_value = page_query
 
     repo = _FakeRepo(db)
     pagination, result_items = repo.list()
@@ -165,6 +159,7 @@ def test_list_without_limit_returns_all_items():
     assert pagination.total == 2
     assert pagination.limit == 2
     assert pagination.offset == 0
+    page_query.count.assert_called_once_with()
     page_query.offset.assert_called_once_with(0)
     page_query.limit.assert_not_called()
 
@@ -176,22 +171,20 @@ def test_list_can_sort_by_created_at_newest():
     _FakeModel.created_at.desc.reset_mock()
 
     db = Mock()
-    count_query = Mock()
-    count_query.count.return_value = 1
-
     page_query = Mock()
+    page_query.count.return_value = 1
     page_query.order_by.return_value = page_query
     limit_chain = Mock()
     page_query.limit.return_value = limit_chain
     limit_chain.offset.return_value.all.return_value = []
-
-    db.query.side_effect = [count_query, page_query]
+    db.query.return_value = page_query
 
     repo = _FakeRepo(db)
     repo.list(limit=10, offset=0, order_by=SortOrder.NEWEST)
 
     _FakeModel.created_at.desc.assert_called_once_with()
     page_query.order_by.assert_called_once()
+    page_query.count.assert_called_once_with()
 
 
 def test_partial_update_commits_refreshes_and_returns_entity():

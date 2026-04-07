@@ -1,8 +1,8 @@
 from uuid import UUID
 
+from app.core.base_service import BaseService
 from app.core.constants import SortOrder
 from app.core.exceptions import NotFoundError
-from app.decorators.permissions import check_permission
 from app.modules.posts.models import Post
 from app.modules.posts.repositories import PostRepository
 from app.modules.posts.schemas import PostCreate, PostUpdate
@@ -10,7 +10,7 @@ from app.utils.helpers import apply_partial_update
 from app.utils.pagination import PaginationInfo
 
 
-class PostService:
+class PostService(BaseService):
     """
     Service layer for managing posts.
 
@@ -113,7 +113,9 @@ class PostService:
 
         post = self.get_by_id(post_id)
 
-        check_permission(current_user, post.author_id)
+        self._check_is_admin_or_owner(
+            current_user=current_user, owner_id=post.author_id
+        )
 
         data = payload.model_dump(exclude_unset=True)
         category_ids = data.pop("category_ids", None)
@@ -141,6 +143,8 @@ class PostService:
         """
         post = self.get_by_id(post_id)
 
-        check_permission(current_user, post.author_id)
+        self._check_is_admin_or_owner(
+            current_user=current_user, owner_id=post.author_id
+        )
 
         self.repo.delete(post)

@@ -199,11 +199,9 @@ def test_partial_update_updates_title_and_categories(
     categories = [make_category("cat_1"), make_category("cat_2")]
     repo.get_categories_by_ids.return_value = categories
 
-    check_permission_mock = Mock(return_value=True)
+    check_permission_mock = Mock(return_value=None)
     apply_partial_update_mock = Mock(return_value=None)
-    monkeypatch.setattr(
-        "app.modules.posts.services.check_permission", check_permission_mock
-    )
+    monkeypatch.setattr(service, "_check_is_admin_or_owner", check_permission_mock)
     monkeypatch.setattr(
         "app.modules.posts.services.apply_partial_update", apply_partial_update_mock
     )
@@ -217,7 +215,9 @@ def test_partial_update_updates_title_and_categories(
         post_id=post_id, payload=payload, current_user=current_user
     )
 
-    check_permission_mock.assert_called_once_with(current_user, author_id)
+    check_permission_mock.assert_called_once_with(
+        current_user=current_user, owner_id=author_id
+    )
     repo.get_categories_by_ids.assert_called_once_with(cat_ids)
     assert post.categories == categories
 
@@ -244,10 +244,8 @@ def test_partial_update_raises_not_found_when_categories_missing(
     cat_ids = [uuid4(), uuid4()]
     repo.get_categories_by_ids.return_value = [make_category("cat_1")]  # missing one
 
-    check_permission_mock = Mock(return_value=True)
-    monkeypatch.setattr(
-        "app.modules.posts.services.check_permission", check_permission_mock
-    )
+    check_permission_mock = Mock(return_value=None)
+    monkeypatch.setattr(service, "_check_is_admin_or_owner", check_permission_mock)
 
     payload = PostUpdate(category_ids=cat_ids)
     with pytest.raises(NotFoundError) as exc_info:
@@ -256,7 +254,9 @@ def test_partial_update_raises_not_found_when_categories_missing(
         )
 
     assert exc_info.value.message == "One or more categories not found"
-    check_permission_mock.assert_called_once_with(current_user, author_id)
+    check_permission_mock.assert_called_once_with(
+        current_user=current_user, owner_id=author_id
+    )
     repo.get_categories_by_ids.assert_called_once_with(cat_ids)
     repo.partial_update.assert_not_called()
 
@@ -273,10 +273,8 @@ def test_partial_update_raises_not_found_when_post_missing(
     repo.get_by_id.return_value = None
     current_user = SimpleNamespace(id=uuid4())
 
-    check_permission_mock = Mock(return_value=True)
-    monkeypatch.setattr(
-        "app.modules.posts.services.check_permission", check_permission_mock
-    )
+    check_permission_mock = Mock(return_value=None)
+    monkeypatch.setattr(service, "_check_is_admin_or_owner", check_permission_mock)
 
     payload = PostUpdate(title="New title")
     with pytest.raises(NotFoundError) as exc_info:
@@ -312,11 +310,9 @@ def test_partial_update_without_category_ids_does_not_fetch_categories(
 
     current_user = SimpleNamespace(id=uuid4())
 
-    check_permission_mock = Mock(return_value=True)
+    check_permission_mock = Mock(return_value=None)
     apply_partial_update_mock = Mock(return_value=None)
-    monkeypatch.setattr(
-        "app.modules.posts.services.check_permission", check_permission_mock
-    )
+    monkeypatch.setattr(service, "_check_is_admin_or_owner", check_permission_mock)
     monkeypatch.setattr(
         "app.modules.posts.services.apply_partial_update", apply_partial_update_mock
     )
@@ -329,7 +325,9 @@ def test_partial_update_without_category_ids_does_not_fetch_categories(
         post_id=post_id, payload=payload, current_user=current_user
     )
 
-    check_permission_mock.assert_called_once_with(current_user, author_id)
+    check_permission_mock.assert_called_once_with(
+        current_user=current_user, owner_id=author_id
+    )
     repo.get_categories_by_ids.assert_not_called()
     apply_partial_update_mock.assert_called_once_with(instance=post, data=expected_data)
     repo.partial_update.assert_called_once_with(post)
@@ -354,14 +352,14 @@ def test_delete_calls_repo_delete_and_permission(
     repo.get_by_id.return_value = post
 
     current_user = SimpleNamespace(id=uuid4())
-    check_permission_mock = Mock(return_value=True)
-    monkeypatch.setattr(
-        "app.modules.posts.services.check_permission", check_permission_mock
-    )
+    check_permission_mock = Mock(return_value=None)
+    monkeypatch.setattr(service, "_check_is_admin_or_owner", check_permission_mock)
 
     service.delete(post_id=post_id, current_user=current_user)
 
-    check_permission_mock.assert_called_once_with(current_user, owner_id)
+    check_permission_mock.assert_called_once_with(
+        current_user=current_user, owner_id=owner_id
+    )
     repo.delete.assert_called_once_with(post)
 
 
@@ -385,10 +383,8 @@ def test_delete_raises_not_found_when_post_missing(
     repo.get_by_id.return_value = None
 
     current_user = SimpleNamespace(id=uuid4())
-    check_permission_mock = Mock(return_value=True)
-    monkeypatch.setattr(
-        "app.modules.posts.services.check_permission", check_permission_mock
-    )
+    check_permission_mock = Mock(return_value=None)
+    monkeypatch.setattr(service, "_check_is_admin_or_owner", check_permission_mock)
 
     with pytest.raises(NotFoundError) as exc_info:
         service.delete(post_id=post_id, current_user=current_user)
