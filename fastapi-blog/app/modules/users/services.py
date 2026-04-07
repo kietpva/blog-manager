@@ -1,22 +1,23 @@
 from sqlalchemy.exc import IntegrityError
 
+from app.core.base_service import BaseService
 from app.core.constants import SortOrder
 from app.core.exceptions import (
     BadRequestError,
     NotFoundError,
 )
-from app.decorators.permissions import check_permission
 from app.modules.users.models import User
 from app.modules.users.repositories import UserRepository
 from app.modules.users.schemas import (
     UserCreate,
     UserUpdate,
+    UserUpdateByWebhooks,
 )
 from app.utils.helpers import apply_partial_update
 from app.utils.pagination import PaginationInfo
 
 
-class UserService:
+class UserService(BaseService):
     """
     Service layer for user-related business logic.
 
@@ -129,7 +130,7 @@ class UserService:
         Raises:
             AppError: If the user does not have permission to update this record.
         """
-        check_permission(current_user=current_user, owner_id=user_id)
+        self._check_is_admin_or_owner(current_user=current_user, owner_id=user_id)
 
         user = self.repo.get_by_id(user_id)
 
@@ -140,7 +141,7 @@ class UserService:
 
         return self.repo.partial_update(user)
 
-    def update_by_webhooks(self, auth_id: str, payload: UserUpdate) -> User:
+    def update_by_webhooks(self, auth_id: str, payload: UserUpdateByWebhooks) -> User:
         user = self.repo.get_by_auth_id(auth_id=auth_id)
 
         self.partial_update(payload=payload, user_id=user.id, current_user=user)

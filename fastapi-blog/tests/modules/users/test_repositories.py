@@ -1,6 +1,5 @@
 from unittest.mock import Mock, patch
 
-from app.core.constants import SortOrder
 from app.modules.users.models import User
 from app.modules.users.repositories import UserRepository
 from app.utils.pagination import PaginationInfo
@@ -34,15 +33,13 @@ def test_get_by_auth_id_builds_expected_query_chain():
     filtered.one_or_none.assert_called_once_with()
 
 
-def test_list_delegates_to_base_repository_with_created_at_desc_order():
+def test_list_delegates_to_base_repository_list():
     """
-    Test that UserRepository.list delegates to BaseRepository.list
-    with proper ordering by 'created_at' in descending order.
+    Test that UserRepository.list delegates to BaseRepository.list.
 
     The test verifies that:
       - UserRepository.list calls the base repository's list method
       with the expected limit and offset
-      - The 'order_by' keyword argument is included and applies to the 'created_at' field
       - The returned pagination and items match the expected values
       - The base list method is called exactly once
     """
@@ -67,6 +64,6 @@ def test_list_delegates_to_base_repository_with_created_at_desc_order():
     base_list_mock.assert_called_once()
 
     args, kwargs = base_list_mock.call_args
-    assert args == (10, 0)
-    assert "order_by" in kwargs
-    assert kwargs["order_by"] == SortOrder.NEWEST
+    assert args == ()
+    assert kwargs["limit"] == 10
+    assert kwargs["offset"] == 0

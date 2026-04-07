@@ -221,11 +221,9 @@ def test_partial_update_calls_check_permission_and_repo_update(
     repo.partial_update.return_value = target_user
     payload = UserUpdate(first_name="Updated")
 
-    check_permission_mock = Mock(return_value=True)
+    check_permission_mock = Mock(return_value=None)
     apply_partial_update_mock = Mock(return_value=None)
-    monkeypatch.setattr(
-        "app.modules.users.services.check_permission", check_permission_mock
-    )
+    monkeypatch.setattr(service, "_check_is_admin_or_owner", check_permission_mock)
     monkeypatch.setattr(
         "app.modules.users.services.apply_partial_update", apply_partial_update_mock
     )
@@ -236,8 +234,7 @@ def test_partial_update_calls_check_permission_and_repo_update(
 
     assert result is target_user
     check_permission_mock.assert_called_once_with(
-        current_user=current_user,
-        owner_id="owner-id",
+        current_user=current_user, owner_id="owner-id"
     )
     apply_partial_update_mock.assert_called_once_with(
         instance=target_user,
@@ -260,10 +257,8 @@ def test_partial_update_raises_not_found_when_target_missing(
     current_user = SimpleNamespace(id="owner-id", role=UserRole.USER)
     repo.get_by_id.return_value = None
 
-    check_permission_mock = Mock(return_value=True)
-    monkeypatch.setattr(
-        "app.modules.users.services.check_permission", check_permission_mock
-    )
+    check_permission_mock = Mock(return_value=None)
+    monkeypatch.setattr(service, "_check_is_admin_or_owner", check_permission_mock)
 
     with pytest.raises(NotFoundError) as exc_info:
         service.partial_update(

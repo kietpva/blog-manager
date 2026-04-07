@@ -6,7 +6,7 @@ from svix.webhooks import Webhook, WebhookVerificationError
 from app.core.config import settings
 from app.core.constants import ClerkEventEnum
 from app.dependencies.users import get_user_service
-from app.modules.users.schemas import UserCreate, UserUpdate
+from app.modules.users.schemas import UserCreate, UserUpdateByWebhooks
 from app.modules.users.services import UserService
 
 secret = settings.CLERK_WEBHOOK_SECRET
@@ -69,7 +69,7 @@ async def clerk_webhook(
     if normalized_event_type == ClerkEventEnum.USER_UPDATED.value:
         service.update_by_webhooks(
             auth_id,
-            UserUpdate(
+            UserUpdateByWebhooks(
                 first_name=first_name,
                 last_name=last_name,
                 is_active=not is_active,
