@@ -8,7 +8,7 @@ from app.core.exceptions import register_exception_handlers
 from app.core.logging import logging_middleware, setup_logging
 from app.db.init_db import init_db
 from app.middleware.auth_middleware import register_auth_middleware
-from app.routers import register_routers
+from app.routers import register_routers_api_v1
 
 
 @asynccontextmanager
@@ -45,7 +45,7 @@ register_auth_middleware(app)
 # register_middleware(app)
 
 # Routers
-register_routers(app)
+register_routers_api_v1(app)
 
 # Exception handlers
 register_exception_handlers(app)
