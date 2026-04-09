@@ -56,6 +56,7 @@ def users(
     limit: int = Query(10, ge=1, le=MAX_ITEMS_PER_PAGE),
     offset: int = Query(0, ge=0),
     order_by: SortOrder = SortOrder.NEWEST,
+    search: str | None = None,
     service: UserService = Depends(get_user_service),
 ):
     """
@@ -71,7 +72,9 @@ def users(
     Returns:
         PaginationResponse[List[UserRead]]: Paginated user list and metadata.
     """
-    pagination, items = service.list(limit=limit, offset=offset, order_by=order_by)
+    pagination, items = service.list(
+        limit=limit, offset=offset, order_by=order_by, search=search
+    )
     return PaginationResponse[list[UserRead]](
         data=items,
         meta=Meta(pagination=pagination),
