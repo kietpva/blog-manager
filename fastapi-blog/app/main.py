@@ -35,11 +35,6 @@ async def log_requests(request, call_next):
     return await logging_middleware(request, call_next)
 
 
-@app.get("/test-error")
-def test_error():
-    raise Exception("Something went wrong")
-
-
 # Middleware
 register_auth_middleware(app)
 # register_middleware(app)

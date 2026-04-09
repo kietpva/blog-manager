@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Generic, TypeVar
 
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.core.constants import SortOrder
@@ -13,6 +14,7 @@ IdType = TypeVar("IdType")
 
 class BaseRepository(Generic[ModelType, IdType]):
     model: type[ModelType]
+    search_fields: list[str] = []
 
     def __init__(self, db: Session):
         """
@@ -59,6 +61,7 @@ class BaseRepository(Generic[ModelType, IdType]):
         *,
         order_by: SortOrder | None = None,
         options: list[Any] | None = None,
+        search: str | None = None,
     ) -> tuple[PaginationInfo, list[ModelType]]:
         """
         Retrieve paginated results plus pagination metadata.
@@ -68,6 +71,7 @@ class BaseRepository(Generic[ModelType, IdType]):
         """
 
         query = self._build_base_query(options)
+        query = self._apply_search(query, search)
         query = self._apply_sorting(query, order_by)
 
         offset, limit = self._normalize_pagination(offset, limit)
@@ -84,6 +88,33 @@ class BaseRepository(Generic[ModelType, IdType]):
         )
 
         return pagination, items
+
+    def _apply_search(self, query, search: str | None):
+        """
+        Apply search filtering to the SQLAlchemy query based on the provided search string.
+
+        Args:
+            query: SQLAlchemy query object to filter.
+            search (str | None): The search term to look for in designated search fields.
+
+        Returns:
+            The filtered query if a search term is supplied and searchable fields exist
+            otherwise, the original query.
+        """
+
+        if not search or not self.search_fields:
+            return query
+
+        conditions = [
+            getattr(self.model, field).ilike(f"%{search}%")
+            for field in self.search_fields
+            if hasattr(self.model, field)
+        ]
+
+        if conditions:
+            query = query.filter(or_(*conditions))
+
+        return query
 
     def partial_update(self, entity: ModelType) -> ModelType:
         """

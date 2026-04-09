@@ -5,6 +5,7 @@ from app.modules.users.models import User
 
 
 class UserRepository(BaseRepository[User, str]):
+    search_fields = ["email", "first_name", "last_name"]
     model = User
 
     def get_by_auth_id(self, auth_id: str) -> User | None:

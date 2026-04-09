@@ -12,6 +12,7 @@ from app.utils.pagination import PaginationInfo
 
 
 class PostRepository(BaseRepository[Post, UUID]):
+    search_fields = ["title", "content"]
     """
     Repository for handling CRUD operations for Post entities.
     """
@@ -23,6 +24,7 @@ class PostRepository(BaseRepository[Post, UUID]):
         limit: int,
         offset: int,
         order_by: SortOrder = SortOrder.NEWEST,
+        search: str | None = None,
     ) -> tuple[PaginationInfo, list[Post]]:
         """
         Retrieve a paginated list of posts with their associated categories.
@@ -39,6 +41,7 @@ class PostRepository(BaseRepository[Post, UUID]):
             offset,
             order_by=order_by,
             options=[selectinload(Post.categories)],
+            search=search,
         )
 
     def get_categories_by_ids(self, category_ids: list[UUID]) -> list[Category]:

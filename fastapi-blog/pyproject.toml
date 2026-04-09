@@ -35,7 +35,7 @@ target-version = "py313"
 select = [
   "E",  # pycodestyle
   "F",  # pyflakes
-  "N",  # naming (enum uppercase ở đây)
+  "N",  # naming
   "I",  # import sort
   "UP", # pyupgrade
 ]

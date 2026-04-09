@@ -75,6 +75,7 @@ def posts(
     limit: int = Query(10, ge=1, le=MAX_ITEMS_PER_PAGE),
     offset: int = Query(0, ge=0),
     order_by: SortOrder = SortOrder.NEWEST,
+    search: str | None = None,
     service: PostService = Depends(get_post_service),
 ):
     """
@@ -89,7 +90,7 @@ def posts(
         PaginationResponse[list[PostResponse]]: Paginated post list and pagination info.
     """
 
-    pagination, items = service.list(limit, offset, order_by)
+    pagination, items = service.list(limit, offset, order_by, search)
 
     return PaginationResponse[list[PostResponse]](
         data=items,

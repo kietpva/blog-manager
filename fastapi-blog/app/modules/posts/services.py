@@ -75,6 +75,7 @@ class PostService(BaseService):
         limit: int,
         offset: int,
         order_by: SortOrder = SortOrder.NEWEST,
+        search: str | None = None,
     ) -> tuple[PaginationInfo, list[Post]]:
         """
         Retrieve a paginated list of posts, including pagination metadata.
@@ -87,7 +88,7 @@ class PostService(BaseService):
             tuple[PaginationInfo, list[Post]]: Pagination metadata and list of Post instances.
         """
 
-        return self.repo.list(limit, offset, order_by=order_by)
+        return self.repo.list(limit, offset, order_by=order_by, search=search)
 
     def partial_update(self, post_id: UUID, payload: PostUpdate, current_user) -> Post:
         """
