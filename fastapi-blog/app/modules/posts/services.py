@@ -3,6 +3,7 @@ from uuid import UUID
 from app.core.base_service import BaseService
 from app.core.constants import SortOrder
 from app.core.exceptions import NotFoundError
+from app.core.permissions import check_permission
 from app.modules.posts.models import Post
 from app.modules.posts.repositories import PostRepository
 from app.modules.posts.schemas import PostCreate, PostUpdate
@@ -114,9 +115,7 @@ class PostService(BaseService):
 
         post = self.get_by_id(post_id)
 
-        self._check_is_admin_or_owner(
-            current_user=current_user, owner_id=post.author_id
-        )
+        check_permission(current_user=current_user, owner_id=post.author_id)
 
         data = payload.model_dump(exclude_unset=True)
         category_ids = data.pop("category_ids", None)
@@ -144,8 +143,6 @@ class PostService(BaseService):
         """
         post = self.get_by_id(post_id)
 
-        self._check_is_admin_or_owner(
-            current_user=current_user, owner_id=post.author_id
-        )
+        check_permission(current_user=current_user, owner_id=post.author_id)
 
         self.repo.delete(post)

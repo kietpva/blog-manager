@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 from app.core.exceptions import AppError, ErrorCode, StatusCode
-from app.decorators.permissions import check_permission
+from app.core.permissions import check_permission
 from app.modules.users.models import UserRole
 
 

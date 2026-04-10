@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pytest
 
 from app.core.exceptions import AppError, ErrorCode, StatusCode
-from app.decorators.roles import require_roles
+from app.dependencies.roles import require_roles
 from app.modules.users.models import UserRole
 
 
