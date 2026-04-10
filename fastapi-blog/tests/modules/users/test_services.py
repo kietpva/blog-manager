@@ -200,7 +200,7 @@ def test_list_returns_pagination_and_items(service: UserService, repo: Mock):
 
     assert result_page is page
     assert result_items == items
-    repo.list.assert_called_once_with(10, 0, order_by=SortOrder.NEWEST)
+    repo.list.assert_called_once_with(10, 0, order_by=SortOrder.NEWEST, search=None)
 
 
 def test_partial_update_calls_check_permission_and_repo_update(
@@ -223,7 +223,9 @@ def test_partial_update_calls_check_permission_and_repo_update(
 
     check_permission_mock = Mock(return_value=None)
     apply_partial_update_mock = Mock(return_value=None)
-    monkeypatch.setattr(service, "_check_is_admin_or_owner", check_permission_mock)
+    monkeypatch.setattr(
+        "app.modules.users.services.check_permission", check_permission_mock
+    )
     monkeypatch.setattr(
         "app.modules.users.services.apply_partial_update", apply_partial_update_mock
     )
@@ -244,7 +246,7 @@ def test_partial_update_calls_check_permission_and_repo_update(
 
 
 def test_partial_update_raises_not_found_when_target_missing(
-    service: UserService, repo: Mock, monkeypatch: pytest.MonkeyPatch
+    service: UserService, repo: Mock
 ):
     """
     Test that service.partial_update raises NotFoundException if the target user does not exist.
@@ -252,13 +254,9 @@ def test_partial_update_raises_not_found_when_target_missing(
     Args:
         service (UserService): The UserService under test.
         repo (Mock): The mocked user repository.
-        monkeypatch (pytest.MonkeyPatch): Pytest monkeypatch for patching dependencies.
     """
     current_user = SimpleNamespace(id="owner-id", role=UserRole.USER)
     repo.get_by_id.return_value = None
-
-    check_permission_mock = Mock(return_value=None)
-    monkeypatch.setattr(service, "_check_is_admin_or_owner", check_permission_mock)
 
     with pytest.raises(NotFoundError) as exc_info:
         service.partial_update(

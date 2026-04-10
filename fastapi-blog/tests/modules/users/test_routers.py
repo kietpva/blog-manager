@@ -153,6 +153,7 @@ def test_list_returns_paginated_users():
         limit=10,
         offset=0,
         order_by=SortOrder.NEWEST,
+        search=None,
     )
 
 

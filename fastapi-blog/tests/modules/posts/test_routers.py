@@ -115,7 +115,7 @@ def test_list_returns_paginated_posts():
     assert body["data"][0]["id"] == str(post_id)
     assert body["meta"]["pagination"]["total"] == 1
     assert body["meta"]["pagination"]["has_next"] is False
-    service.list.assert_called_once_with(10, 0, SortOrder.NEWEST)
+    service.list.assert_called_once_with(10, 0, SortOrder.NEWEST, None)
 
 
 def test_create_calls_service_and_returns_post():

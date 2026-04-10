@@ -6,6 +6,7 @@ from app.core.exceptions import (
     BadRequestError,
     NotFoundError,
 )
+from app.core.permissions import check_permission
 from app.modules.users.models import User
 from app.modules.users.repositories import UserRepository
 from app.modules.users.schemas import (
@@ -131,7 +132,7 @@ class UserService(BaseService):
         Raises:
             AppError: If the user does not have permission to update this record.
         """
-        self._check_is_admin_or_owner(current_user=current_user, owner_id=user_id)
+        check_permission(current_user=current_user, owner_id=user_id)
 
         user = self.repo.get_by_id(user_id)
 

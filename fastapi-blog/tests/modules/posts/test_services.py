@@ -173,7 +173,7 @@ def test_list_returns_pagination_and_items(service: PostService, repo: Mock):
 
     assert result_page is page
     assert result_items == items
-    repo.list.assert_called_once_with(10, 0, order_by=SortOrder.NEWEST)
+    repo.list.assert_called_once_with(10, 0, order_by=SortOrder.NEWEST, search=None)
 
 
 def test_partial_update_updates_title_and_categories(
@@ -201,7 +201,9 @@ def test_partial_update_updates_title_and_categories(
 
     check_permission_mock = Mock(return_value=None)
     apply_partial_update_mock = Mock(return_value=None)
-    monkeypatch.setattr(service, "_check_is_admin_or_owner", check_permission_mock)
+    monkeypatch.setattr(
+        "app.modules.posts.services.check_permission", check_permission_mock
+    )
     monkeypatch.setattr(
         "app.modules.posts.services.apply_partial_update", apply_partial_update_mock
     )
@@ -245,7 +247,9 @@ def test_partial_update_raises_not_found_when_categories_missing(
     repo.get_categories_by_ids.return_value = [make_category("cat_1")]  # missing one
 
     check_permission_mock = Mock(return_value=None)
-    monkeypatch.setattr(service, "_check_is_admin_or_owner", check_permission_mock)
+    monkeypatch.setattr(
+        "app.modules.posts.services.check_permission", check_permission_mock
+    )
 
     payload = PostUpdate(category_ids=cat_ids)
     with pytest.raises(NotFoundError) as exc_info:
@@ -274,7 +278,9 @@ def test_partial_update_raises_not_found_when_post_missing(
     current_user = SimpleNamespace(id=uuid4())
 
     check_permission_mock = Mock(return_value=None)
-    monkeypatch.setattr(service, "_check_is_admin_or_owner", check_permission_mock)
+    monkeypatch.setattr(
+        "app.modules.posts.services.check_permission", check_permission_mock
+    )
 
     payload = PostUpdate(title="New title")
     with pytest.raises(NotFoundError) as exc_info:
@@ -312,7 +318,9 @@ def test_partial_update_without_category_ids_does_not_fetch_categories(
 
     check_permission_mock = Mock(return_value=None)
     apply_partial_update_mock = Mock(return_value=None)
-    monkeypatch.setattr(service, "_check_is_admin_or_owner", check_permission_mock)
+    monkeypatch.setattr(
+        "app.modules.posts.services.check_permission", check_permission_mock
+    )
     monkeypatch.setattr(
         "app.modules.posts.services.apply_partial_update", apply_partial_update_mock
     )
@@ -353,7 +361,9 @@ def test_delete_calls_repo_delete_and_permission(
 
     current_user = SimpleNamespace(id=uuid4())
     check_permission_mock = Mock(return_value=None)
-    monkeypatch.setattr(service, "_check_is_admin_or_owner", check_permission_mock)
+    monkeypatch.setattr(
+        "app.modules.posts.services.check_permission", check_permission_mock
+    )
 
     service.delete(post_id=post_id, current_user=current_user)
 
@@ -384,7 +394,9 @@ def test_delete_raises_not_found_when_post_missing(
 
     current_user = SimpleNamespace(id=uuid4())
     check_permission_mock = Mock(return_value=None)
-    monkeypatch.setattr(service, "_check_is_admin_or_owner", check_permission_mock)
+    monkeypatch.setattr(
+        "app.modules.posts.services.check_permission", check_permission_mock
+    )
 
     with pytest.raises(NotFoundError) as exc_info:
         service.delete(post_id=post_id, current_user=current_user)
