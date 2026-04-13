@@ -1,0 +1,10 @@
+from src.app.db.base import Base
+from src.app.db.session import engine
+
+
+def init_db() -> None:
+    Base.metadata.create_all(bind=engine)
+
+
+if __name__ == "__main__":
+    init_db()
