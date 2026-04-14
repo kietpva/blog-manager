@@ -34,6 +34,7 @@ class UserService(BaseService):
         Args:
             repo (UserRepository): The repository used for user database operations.
         """
+        super().__init__(repo.db)
         self.repo = repo
 
     def create(self, payload: UserCreate) -> User:
@@ -63,7 +64,8 @@ class UserService(BaseService):
         )
 
         try:
-            return self.repo.create(user)
+            self.repo.create(user)
+            return self.commit_and_refresh(user)
 
         except IntegrityError:
             raise BadRequestError(message="User already exists")
@@ -141,7 +143,7 @@ class UserService(BaseService):
 
         apply_partial_update(instance=user, data=payload.model_dump(exclude_unset=True))
 
-        return self.repo.partial_update(user)
+        return self.commit_and_refresh(user)
 
     def update_by_webhooks(self, auth_id: str, payload: UserUpdateByWebhooks) -> User:
         user = self.repo.get_by_auth_id(auth_id=auth_id)

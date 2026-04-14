@@ -25,12 +25,10 @@ class _FakeRepo(BaseRepository[_FakeModel, int]):
     model = _FakeModel
 
 
-def test_create_adds_commits_refreshes_and_returns_entity():
+def test_create_adds_and_returns_entity():
     """
     Test that create:
     - Adds the given entity to the session,
-    - Commits the transaction,
-    - Refreshes the entity,
     - Returns the entity.
     """
     db = Mock()
@@ -41,8 +39,8 @@ def test_create_adds_commits_refreshes_and_returns_entity():
 
     assert result is entity
     db.add.assert_called_once_with(entity)
-    db.commit.assert_called_once_with()
-    db.refresh.assert_called_once_with(entity)
+    db.commit.assert_not_called()
+    db.refresh.assert_not_called()
 
 
 def test_get_by_id_queries_filter_one_or_none():
@@ -187,35 +185,15 @@ def test_list_can_sort_by_created_at_newest():
     page_query.count.assert_called_once_with()
 
 
-def test_partial_update_commits_refreshes_and_returns_entity():
+def test_delete_deletes_entity_only():
     """
-    Test that partial_update:
-    - Commits the session,
-    - Refreshes the entity,
-    - Returns the entity.
+    Test that delete removes the entity from the session.
     """
     db = Mock()
     repo = _FakeRepo(db)
     entity = object()
 
-    result = repo.partial_update(entity)
-
-    assert result is entity
-    db.commit.assert_called_once_with()
-    db.refresh.assert_called_once_with(entity)
-
-
-def test_delete_deletes_and_commits():
-    """
-    Test that delete:
-    - Deletes the entity from the session,
-    - Commits the transaction.
-    """
-    db = Mock()
-    repo = _FakeRepo(db)
-    entity = object()
-
-    repo.delete(entity)  # type: ignore[arg-type]
+    repo.delete(entity)
 
     db.delete.assert_called_once_with(entity)
-    db.commit.assert_called_once_with()
+    db.commit.assert_not_called()

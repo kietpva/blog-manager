@@ -1,3 +1,4 @@
+from src.app.core.base_service import BaseService
 from src.app.core.exceptions import BadRequestError, NotFoundError
 from src.app.modules.categories.models import Category
 from src.app.modules.categories.repositories import CategoryRepository
@@ -8,7 +9,7 @@ from src.app.modules.categories.schemas import (
 from src.app.utils.helpers import apply_partial_update
 
 
-class CategoryService:
+class CategoryService(BaseService):
     """
     Service layer for handling category-related business logic.
 
@@ -23,6 +24,7 @@ class CategoryService:
         Args:
             repo (CategoryRepository): The repository handling data persistence.
         """
+        super().__init__(repo.db)
         self.repo = repo
 
     def create(self, data: CategoryCreate) -> Category:
@@ -35,13 +37,18 @@ class CategoryService:
         Returns:
             The created category object.
         """
-        existing = self.repo.get_by_name(data.name)
-        if existing:
-            raise BadRequestError(message="Category name already exists")
+        try:
+            existing = self.repo.get_by_name(data.name)
+            if existing:
+                raise BadRequestError(message="Category name already exists")
 
-        category = Category(name=data.name, description=data.description)
+            category = Category(name=data.name, description=data.description)
 
-        return self.repo.create(category)
+            self.repo.create(category)
+            return self.commit_and_refresh(category)
+        except Exception:
+            self.rollback()
+            raise
 
     def list(self) -> list[Category]:
         """
@@ -50,7 +57,8 @@ class CategoryService:
         Returns:
             A list of all category objects.
         """
-        return self.repo.list()
+        _, categories = self.repo.list()
+        return categories
 
     def get_by_id(self, category_id) -> Category:
         """
@@ -92,9 +100,9 @@ class CategoryService:
             data=data.model_dump(exclude_unset=True),
         )
 
-        return self.repo.partial_update(category)
+        return self.commit_and_refresh(category)
 
-    def delete_category(self, category_id):
+    def delete(self, category_id):
         """
         Delete a category by its ID.
 
@@ -103,3 +111,4 @@ class CategoryService:
         """
         category = self.get_by_id(category_id)
         self.repo.delete(category)
+        self.commit()

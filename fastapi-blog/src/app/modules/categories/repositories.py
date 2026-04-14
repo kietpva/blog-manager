@@ -12,14 +12,15 @@ class CategoryRepository(BaseRepository[Category, str]):
 
     model = Category
 
-    def list(self):
-        """
-        Retrieve all categories from the database.
+    # def list(self):
+    #     """
+    #     Retrieve all categories from the database.
 
-        Returns:
-            list[Category]: A list of Category objects.
-        """
-        return self.db.query(Category).all()
+    #     Returns:
+    #         list[Category]: A list of Category objects.
+    #     """
+    #     _, categories = super().list()
+    #     return categories
 
     def get_by_name(self, name: str) -> Category | None:
         """
@@ -31,4 +32,4 @@ class CategoryRepository(BaseRepository[Category, str]):
         Returns:
             Category or None: The Category object if found, else None.
         """
-        return self.db.query(Category).filter(Category.name == name).first()
+        return self.db.query(self.model).filter(self.model.name == name).first()

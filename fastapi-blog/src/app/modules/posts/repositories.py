@@ -2,13 +2,9 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy.orm import selectinload
-
 from src.app.core.base_repository import BaseRepository
-from src.app.core.constants import SortOrder
 from src.app.modules.categories.models import Category
 from src.app.modules.posts.models import Post
-from src.app.utils.pagination import PaginationInfo
 
 
 class PostRepository(BaseRepository[Post, UUID]):
@@ -18,31 +14,6 @@ class PostRepository(BaseRepository[Post, UUID]):
     """
 
     model = Post
-
-    def list(
-        self,
-        limit: int,
-        offset: int,
-        order_by: SortOrder = SortOrder.NEWEST,
-        search: str | None = None,
-    ) -> tuple[PaginationInfo, list[Post]]:
-        """
-        Retrieve a paginated list of posts with their associated categories.
-
-        Args:
-            limit (int): Maximum number of posts to return.
-            offset (int): Number of posts to skip before starting to collect the result set.
-
-        Returns:
-            tuple[PaginationInfo, list[Post]]: (pagination, items)
-        """
-        return super().list(
-            limit,
-            offset,
-            order_by=order_by,
-            options=[selectinload(Post.categories)],
-            search=search,
-        )
 
     def get_categories_by_ids(self, category_ids: list[UUID]) -> list[Category]:
         """

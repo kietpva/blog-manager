@@ -182,4 +182,4 @@ def test_delete_returns_204_and_calls_service():
 
     assert response.status_code == 204
     assert response.content == b""
-    service.delete_category.assert_called_once_with(str(category_id))
+    service.delete.assert_called_once_with(str(category_id))

@@ -14,14 +14,17 @@ def test_list_delegates_to_query_all_for_category():
     expected_categories = [Mock(spec=Category)]
 
     db.query.return_value = query
-    query.all.return_value = expected_categories
+    query.count.return_value = len(expected_categories)
+    query.offset.return_value.all.return_value = expected_categories
 
     repo = CategoryRepository(db)
-    result = repo.list()
+    _, result = repo.list()
 
     assert result == expected_categories
     db.query.assert_called_once_with(Category)
-    query.all.assert_called_once_with()
+    query.count.assert_called_once_with()
+    query.limit.assert_not_called()
+    query.offset.assert_called_once_with(0)
 
 
 def test_get_by_name_builds_expected_query_chain():

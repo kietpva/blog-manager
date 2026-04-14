@@ -1,55 +1,32 @@
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 from uuid import uuid4
 
-from src.app.core.constants import SortOrder
 from src.app.modules.categories.models import Category
-from src.app.modules.posts.models import Post
 from src.app.modules.posts.repositories import PostRepository
 
 
-def test_list_delegates_to_base_repository_with_order_and_selectinload():
+def test_list_uses_base_repository_defaults():
     """
-    Test that PostRepository.list delegates to BaseRepository.list with the correct arguments,
-    specifically ensuring it passes the expected 'order_by' (on 'created_at') and 'options'
-    (using selectinload for Post.categories).
-
-    - Verifies exact options object passed to BaseRepository.list.
-    - Asserts return values are as expected from the mocked base list method.
+    Test that PostRepository.list uses inherited BaseRepository behavior.
     """
     db = Mock()
     repo = PostRepository(db)
 
-    expected_page = Mock()
-    expected_items = [Mock(spec=Post)]
+    query = Mock()
+    paginated_query = Mock()
+    expected_items = [Mock(), Mock()]
+    db.query.return_value = query
+    query.count.return_value = len(expected_items)
+    query.limit.return_value = paginated_query
+    paginated_query.offset.return_value.all.return_value = expected_items
 
-    # Patch `selectinload` to a sentinel so we can assert the exact `options` object
-    # passed into BaseRepository.list (SQLAlchemy's Load() string repr is not stable).
-    selectinload_sentinel = object()
-    with (
-        patch("src.app.modules.posts.repositories.selectinload") as selectinload_mock,
-        patch(
-            "src.app.modules.posts.repositories.BaseRepository.list"
-        ) as base_list_mock,
-    ):
-        selectinload_mock.return_value = selectinload_sentinel
-        base_list_mock.return_value = (expected_page, expected_items)
+    pagination, result_items = repo.list(limit=2, offset=0)
 
-        result_page, result_items = repo.list(limit=10, offset=0)
-
-    assert result_page is expected_page
+    assert pagination.total == 2
+    assert pagination.limit == 2
     assert result_items == expected_items
-
-    base_list_mock.assert_called_once()
-    args, kwargs = base_list_mock.call_args
-    assert args == (10, 0)
-    assert "order_by" in kwargs
-    assert kwargs["order_by"] == SortOrder.NEWEST
-
-    assert "options" in kwargs
-    assert kwargs["options"] is not None
-    assert len(kwargs["options"]) == 1
-    assert kwargs["options"][0] is selectinload_sentinel
-    selectinload_mock.assert_called_once_with(Post.categories)
+    db.query.assert_called_once()
+    query.count.assert_called_once_with()
 
 
 def test_get_categories_by_ids_returns_empty_when_no_ids():
