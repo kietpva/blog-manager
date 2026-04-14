@@ -1,0 +1,129 @@
+from fastapi import APIRouter, Depends
+
+from src.app.core.exceptions import StatusCode
+from src.app.dependencies.rbac import Admin, Authenticated
+from src.app.modules.categories.dependencies import get_category_service
+from src.app.modules.categories.schemas import (
+    CategoryCreate,
+    CategoryResponse,
+    CategoryUpdate,
+)
+from src.app.modules.categories.services import CategoryService
+from src.app.utils.pagination import ResponseData
+
+router = APIRouter(prefix="/categories", tags=["Categories"])
+
+
+@router.post(
+    "",
+    response_model=ResponseData[CategoryResponse],
+    dependencies=[Admin],
+)
+def create(
+    data: CategoryCreate,
+    service: CategoryService = Depends(get_category_service),
+):
+    """
+    Create a new category.
+
+    Args:
+        data (CategoryCreate): The category data to create.
+        service (CategoryService): Injected dependency providing category operations.
+
+    Returns:
+        ResponseData[CategoryResponse]: The created category wrapped in a response model.
+    """
+    data = service.create(data)
+    return ResponseData[CategoryResponse](data=data)
+
+
+@router.get(
+    "",
+    response_model=ResponseData[list[CategoryResponse]],
+    dependencies=[Authenticated],
+)
+def categories(
+    service: CategoryService = Depends(get_category_service),
+):
+    """
+    Retrieve all categories.
+
+    Args:
+        service (CategoryService): Injected dependency providing category operations.
+
+    Returns:
+        ResponseData[list[CategoryResponse]]: A list of all categories in a response model.
+    """
+    data = service.list()
+    return ResponseData[list[CategoryResponse]](data=data)
+
+
+@router.get(
+    "/{category_id}",
+    response_model=ResponseData[CategoryResponse],
+    dependencies=[Authenticated],
+)
+def get_by_id(
+    category_id: str,
+    service: CategoryService = Depends(get_category_service),
+):
+    """
+    Retrieve a single category by its ID.
+
+    Args:
+        category_id (str): The unique identifier of the category.
+        service (CategoryService): Injected dependency providing category operations.
+
+    Returns:
+        ResponseData[CategoryResponse]: The specified category in a response model.
+    """
+    data = service.get_by_id(category_id)
+    return ResponseData[CategoryResponse](data=data)
+
+
+@router.patch(
+    "/{category_id}",
+    response_model=ResponseData[CategoryResponse],
+    dependencies=[Admin],
+)
+def partial_update(
+    category_id: str,
+    data: CategoryUpdate,
+    service: CategoryService = Depends(get_category_service),
+):
+    """
+    Update the details of an existing category.
+
+    Args:
+        category_id (str): The unique identifier of the category to update.
+        data (CategoryUpdate): The updated category information.
+        service (CategoryService): Injected dependency providing category operations.
+
+    Returns:
+        ResponseData[CategoryResponse]: The updated category in a response model.
+    """
+    result = service.partial_update(category_id, data)
+    return ResponseData[CategoryResponse](data=result)
+
+
+@router.delete(
+    "/{category_id}",
+    dependencies=[Admin],
+    status_code=StatusCode.NO_CONTENT,
+)
+def delete_category(
+    category_id: str,
+    service: CategoryService = Depends(get_category_service),
+):
+    """
+    Delete a category.
+
+    Args:
+        category_id (str): The unique identifier of the category to delete.
+        service (CategoryService): Injected dependency providing category operations.
+
+    Returns:
+        None
+    """
+    service.delete_category(category_id)
+    return
