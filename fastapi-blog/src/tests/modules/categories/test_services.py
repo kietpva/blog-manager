@@ -13,7 +13,9 @@ from src.app.modules.categories.services import CategoryService
 @pytest.fixture
 def repo() -> Mock:
     """Fixture that returns a mocked CategoryRepository."""
-    return Mock(spec=CategoryRepository)
+    repository = Mock(spec=CategoryRepository)
+    repository.db = Mock()
+    return repository
 
 
 @pytest.fixture
@@ -89,7 +91,7 @@ def test_list_delegates_to_repository(service: CategoryService, repo: Mock):
     Test that listing categories delegates to the repository and returns the expected result.
     """
     expected = [make_category()]
-    repo.list.return_value = expected
+    repo.list.return_value = (Mock(), expected)
 
     result = service.list()
 
@@ -143,7 +145,7 @@ def test_partial_update_raises_conflict_when_name_belongs_to_other_category(
     assert exc_info.value.code == ErrorCode.BAD_REQUEST
     assert exc_info.value.message == "Category name already exists"
     assert exc_info.value.status_code == StatusCode.BAD_REQUEST
-    repo.partial_update.assert_not_called()
+    repo.db.commit.assert_not_called()
 
 
 def test_partial_update_applies_data_and_calls_repo_update(
@@ -157,8 +159,6 @@ def test_partial_update_applies_data_and_calls_repo_update(
     # Same category name lookup is allowed when IDs match.
     repo.get_by_id.return_value = category
     repo.get_by_name.return_value = category
-    repo.partial_update.return_value = category
-
     apply_partial_update_mock = Mock(return_value=None)
     monkeypatch.setattr(
         "src.app.modules.categories.services.apply_partial_update",
@@ -172,7 +172,8 @@ def test_partial_update_applies_data_and_calls_repo_update(
         instance=category,
         data=payload.model_dump(exclude_unset=True),
     )
-    repo.partial_update.assert_called_once_with(category)
+    repo.db.commit.assert_called_once_with()
+    repo.db.refresh.assert_called_once_with(category)
     assert result is category
 
 
@@ -186,7 +187,8 @@ def test_delete_category_deletes_existing_category(
     category = make_category()
     repo.get_by_id.return_value = category
 
-    service.delete_category(category.id)
+    service.delete(category.id)
 
     repo.get_by_id.assert_called_once_with(category.id)
     repo.delete.assert_called_once_with(category)
+    repo.db.commit.assert_called_once_with()

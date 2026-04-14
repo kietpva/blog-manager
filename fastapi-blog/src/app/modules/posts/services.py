@@ -1,5 +1,7 @@
 from uuid import UUID
 
+from sqlalchemy.orm import selectinload
+
 from src.app.core.base_service import BaseService
 from src.app.core.constants import SortOrder
 from src.app.core.exceptions import NotFoundError
@@ -27,6 +29,7 @@ class PostService(BaseService):
         Args:
             repo (PostRepository): The repository used for database operations related to posts.
         """
+        super().__init__(repo.db)
         self.repo = repo
 
     def create(self, payload: PostCreate, author_id: UUID) -> Post:
@@ -40,17 +43,22 @@ class PostService(BaseService):
         Returns:
             Post: The newly created post instance.
         """
-        categories = self.repo.get_categories_by_ids(payload.category_ids)
-        if len(categories) != len(set(payload.category_ids)):
-            raise NotFoundError(message="One or more categories not found")
+        try:
+            categories = self.repo.get_categories_by_ids(payload.category_ids)
+            if len(categories) != len(set(payload.category_ids)):
+                raise NotFoundError(message="One or more categories not found")
 
-        post = Post(
-            **payload.model_dump(exclude={"category_ids"}),
-            author_id=author_id,
-            categories=categories,
-        )
+            post = Post(
+                **payload.model_dump(exclude={"category_ids"}),
+                author_id=author_id,
+                categories=categories,
+            )
 
-        return self.repo.create(post)
+            self.repo.create(post)
+            return self.commit_and_refresh(post)
+        except Exception:
+            self.rollback()
+            raise
 
     def get_by_id(self, post_id: UUID) -> Post:
         """
@@ -89,7 +97,13 @@ class PostService(BaseService):
             tuple[PaginationInfo, list[Post]]: Pagination metadata and list of Post instances.
         """
 
-        return self.repo.list(limit, offset, order_by=order_by, search=search)
+        return self.repo.list(
+            limit,
+            offset,
+            order_by=order_by,
+            search=search,
+            options=[selectinload(Post.categories)],
+        )
 
     def partial_update(self, post_id: UUID, payload: PostUpdate, current_user) -> Post:
         """
@@ -128,7 +142,7 @@ class PostService(BaseService):
 
         apply_partial_update(instance=post, data=data)
 
-        return self.repo.partial_update(post)
+        return self.commit_and_refresh(post)
 
     def delete(self, post_id: UUID, current_user):
         """
@@ -146,3 +160,4 @@ class PostService(BaseService):
         check_permission(current_user=current_user, owner_id=post.author_id)
 
         self.repo.delete(post)
+        self.commit()

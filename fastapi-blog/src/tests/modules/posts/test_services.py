@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import ANY, Mock
 from uuid import UUID, uuid4
 
 import pytest
@@ -25,7 +25,9 @@ def repo() -> Mock:
     Returns:
         Mock: A mock instance of PostRepository.
     """
-    return Mock(spec=PostRepository)
+    repository = Mock(spec=PostRepository)
+    repository.db = Mock()
+    return repository
 
 
 @pytest.fixture
@@ -173,7 +175,9 @@ def test_list_returns_pagination_and_items(service: PostService, repo: Mock):
 
     assert result_page is page
     assert result_items == items
-    repo.list.assert_called_once_with(10, 0, order_by=SortOrder.NEWEST, search=None)
+    repo.list.assert_called_once_with(
+        10, 0, order_by=SortOrder.NEWEST, search=None, options=ANY
+    )
 
 
 def test_partial_update_updates_title_and_categories(
@@ -192,8 +196,6 @@ def test_partial_update_updates_title_and_categories(
     author_id = uuid4()
     post = make_post(author_id=author_id, title="Old", content="Old content")
     repo.get_by_id.return_value = post
-    repo.partial_update.return_value = post
-
     current_user = SimpleNamespace(id=uuid4())
     cat_ids = [uuid4(), uuid4()]
     categories = [make_category("cat_1"), make_category("cat_2")]
@@ -224,7 +226,8 @@ def test_partial_update_updates_title_and_categories(
     assert post.categories == categories
 
     apply_partial_update_mock.assert_called_once_with(instance=post, data=expected_data)
-    repo.partial_update.assert_called_once_with(post)
+    repo.db.commit.assert_called_once_with()
+    repo.db.refresh.assert_called_once_with(post)
     assert result is post
 
 
@@ -262,7 +265,7 @@ def test_partial_update_raises_not_found_when_categories_missing(
         current_user=current_user, owner_id=author_id
     )
     repo.get_categories_by_ids.assert_called_once_with(cat_ids)
-    repo.partial_update.assert_not_called()
+    repo.db.commit.assert_not_called()
 
 
 def test_partial_update_raises_not_found_when_post_missing(
@@ -291,7 +294,7 @@ def test_partial_update_raises_not_found_when_post_missing(
     assert exc_info.value.message == "Post not found"
     check_permission_mock.assert_not_called()
     repo.get_categories_by_ids.assert_not_called()
-    repo.partial_update.assert_not_called()
+    repo.db.commit.assert_not_called()
 
 
 def test_partial_update_without_category_ids_does_not_fetch_categories(
@@ -312,8 +315,6 @@ def test_partial_update_without_category_ids_does_not_fetch_categories(
     author_id = uuid4()
     post = make_post(author_id=author_id)
     repo.get_by_id.return_value = post
-    repo.partial_update.return_value = post
-
     current_user = SimpleNamespace(id=uuid4())
 
     check_permission_mock = Mock(return_value=None)
@@ -338,7 +339,8 @@ def test_partial_update_without_category_ids_does_not_fetch_categories(
     )
     repo.get_categories_by_ids.assert_not_called()
     apply_partial_update_mock.assert_called_once_with(instance=post, data=expected_data)
-    repo.partial_update.assert_called_once_with(post)
+    repo.db.commit.assert_called_once_with()
+    repo.db.refresh.assert_called_once_with(post)
     assert result is post
 
 
@@ -371,6 +373,7 @@ def test_delete_calls_repo_delete_and_permission(
         current_user=current_user, owner_id=owner_id
     )
     repo.delete.assert_called_once_with(post)
+    repo.db.commit.assert_called_once_with()
 
 
 def test_delete_raises_not_found_when_post_missing(

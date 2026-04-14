@@ -21,7 +21,9 @@ def repo() -> Mock:
     Returns:
         Mock: A mock object with the UserRepository spec.
     """
-    return Mock(spec=UserRepository)
+    repository = Mock(spec=UserRepository)
+    repository.db = Mock()
+    return repository
 
 
 @pytest.fixture
@@ -218,7 +220,6 @@ def test_partial_update_calls_check_permission_and_repo_update(
     current_user = SimpleNamespace(id="owner-id", role=UserRole.USER)
     target_user = make_user(auth_id="auth_target")
     repo.get_by_id.return_value = target_user
-    repo.partial_update.return_value = target_user
     payload = UserUpdate(first_name="Updated")
 
     check_permission_mock = Mock(return_value=None)
@@ -242,7 +243,8 @@ def test_partial_update_calls_check_permission_and_repo_update(
         instance=target_user,
         data=payload.model_dump(exclude_unset=True),
     )
-    repo.partial_update.assert_called_once_with(target_user)
+    repo.db.commit.assert_called_once_with()
+    repo.db.refresh.assert_called_once_with(target_user)
 
 
 def test_partial_update_raises_not_found_when_target_missing(
@@ -266,4 +268,4 @@ def test_partial_update_raises_not_found_when_target_missing(
         )
 
     assert exc_info.value.message == "User not found"
-    repo.partial_update.assert_not_called()
+    repo.db.commit.assert_not_called()

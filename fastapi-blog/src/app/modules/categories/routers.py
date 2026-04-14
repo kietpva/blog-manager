@@ -125,5 +125,5 @@ def delete_category(
     Returns:
         None
     """
-    service.delete_category(category_id)
+    service.delete(category_id)
     return
