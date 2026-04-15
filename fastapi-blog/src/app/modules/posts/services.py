@@ -4,6 +4,7 @@ from sqlalchemy.orm import selectinload
 
 from src.app.core.base_service import BaseService
 from src.app.core.constants import SortOrder
+from src.app.core.decorators.retry import RetryFactory
 from src.app.core.exceptions import NotFoundError
 from src.app.core.permissions import check_permission
 from src.app.modules.posts.models import Post
@@ -32,6 +33,7 @@ class PostService(BaseService):
         super().__init__(repo.db)
         self.repo = repo
 
+    @RetryFactory.service()
     def create(self, payload: PostCreate, author_id: UUID) -> Post:
         """
         Create a new post with the given payload and author ID.
@@ -60,6 +62,7 @@ class PostService(BaseService):
             self.rollback()
             raise
 
+    @RetryFactory.service()
     def get_by_id(self, post_id: UUID) -> Post:
         """
         Retrieve a post by its ID.
@@ -79,6 +82,7 @@ class PostService(BaseService):
             raise NotFoundError(message="Post not found")
         return post
 
+    @RetryFactory.service()
     def list(
         self,
         limit: int,
@@ -105,6 +109,7 @@ class PostService(BaseService):
             options=[selectinload(Post.categories)],
         )
 
+    @RetryFactory.service()
     def partial_update(self, post_id: UUID, payload: PostUpdate, current_user) -> Post:
         """
         Update an existing post's details.
@@ -144,6 +149,7 @@ class PostService(BaseService):
 
         return self.commit_and_refresh(post)
 
+    @RetryFactory.service()
     def delete(self, post_id: UUID, current_user):
         """
         Delete a post after checking permissions.

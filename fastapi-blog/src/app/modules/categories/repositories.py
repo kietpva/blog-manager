@@ -1,4 +1,5 @@
 from src.app.core.base_repository import BaseRepository
+from src.app.core.decorators.retry import RetryFactory
 from src.app.modules.categories.models import Category
 
 
@@ -22,6 +23,7 @@ class CategoryRepository(BaseRepository[Category, str]):
     #     _, categories = super().list()
     #     return categories
 
+    @RetryFactory.repository()
     def get_by_name(self, name: str) -> Category | None:
         """
         Retrieve a category by its name.

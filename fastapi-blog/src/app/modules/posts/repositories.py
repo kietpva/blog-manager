@@ -3,6 +3,7 @@ from __future__ import annotations
 from uuid import UUID
 
 from src.app.core.base_repository import BaseRepository
+from src.app.core.decorators.retry import RetryFactory
 from src.app.modules.categories.models import Category
 from src.app.modules.posts.models import Post
 
@@ -15,6 +16,7 @@ class PostRepository(BaseRepository[Post, UUID]):
 
     model = Post
 
+    @RetryFactory.repository()
     def get_categories_by_ids(self, category_ids: list[UUID]) -> list[Category]:
         """
         Retrieve categories by a list of category IDs.

@@ -1,4 +1,5 @@
 from src.app.core.base_service import BaseService
+from src.app.core.decorators.retry import RetryFactory
 from src.app.core.exceptions import BadRequestError, NotFoundError
 from src.app.modules.categories.models import Category
 from src.app.modules.categories.repositories import CategoryRepository
@@ -27,6 +28,7 @@ class CategoryService(BaseService):
         super().__init__(repo.db)
         self.repo = repo
 
+    @RetryFactory.service()
     def create(self, data: CategoryCreate) -> Category:
         """
         Create a new category.
@@ -50,6 +52,7 @@ class CategoryService(BaseService):
             self.rollback()
             raise
 
+    @RetryFactory.service()
     def list(self) -> list[Category]:
         """
         Retrieve all categories.
@@ -60,6 +63,7 @@ class CategoryService(BaseService):
         _, categories = self.repo.list()
         return categories
 
+    @RetryFactory.service()
     def get_by_id(self, category_id) -> Category:
         """
         Retrieve a category by its ID.
@@ -79,6 +83,7 @@ class CategoryService(BaseService):
 
         return category
 
+    @RetryFactory.service()
     def partial_update(self, category_id: str, data: CategoryUpdate) -> Category:
         """
         Update an existing category.
@@ -102,6 +107,7 @@ class CategoryService(BaseService):
 
         return self.commit_and_refresh(category)
 
+    @RetryFactory.service()
     def delete(self, category_id):
         """
         Delete a category by its ID.
