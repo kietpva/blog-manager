@@ -6,6 +6,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from src.app.core.constants import SortOrder
+from src.app.core.decorators.retry import RetryFactory
 from src.app.utils.pagination import PaginationInfo, build_pagination
 
 ModelType = TypeVar("ModelType")
@@ -38,6 +39,7 @@ class BaseRepository(Generic[ModelType, IdType]):
         self.db.add(entity)
         return entity
 
+    @RetryFactory.repository()
     def get_by_id(self, entity_id: IdType) -> ModelType | None:
         """
         Retrieve an entity by its unique identifier.
@@ -52,6 +54,7 @@ class BaseRepository(Generic[ModelType, IdType]):
             self.db.query(self.model).filter(self.model.id == entity_id).one_or_none()
         )
 
+    @RetryFactory.repository()
     def list(
         self,
         limit: int | None = None,
@@ -114,6 +117,7 @@ class BaseRepository(Generic[ModelType, IdType]):
 
         return query
 
+    @RetryFactory.repository()
     def delete(self, entity: ModelType) -> None:
         """
         Remove an entity from the database.

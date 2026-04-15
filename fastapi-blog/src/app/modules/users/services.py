@@ -2,6 +2,7 @@ from sqlalchemy.exc import IntegrityError
 
 from src.app.core.base_service import BaseService
 from src.app.core.constants import SortOrder
+from src.app.core.decorators.retry import RetryFactory
 from src.app.core.exceptions import (
     BadRequestError,
     NotFoundError,
@@ -37,6 +38,7 @@ class UserService(BaseService):
         super().__init__(repo.db)
         self.repo = repo
 
+    @RetryFactory.service()
     def create(self, payload: UserCreate) -> User:
         """
         Create a new user in the system.
@@ -70,6 +72,7 @@ class UserService(BaseService):
         except IntegrityError:
             raise BadRequestError(message="User already exists")
 
+    @RetryFactory.service()
     def get_by_id(self, user_id: str) -> User:
         """
         Retrieve a user by their ID.
@@ -90,6 +93,7 @@ class UserService(BaseService):
 
         return user
 
+    @RetryFactory.service()
     def list(
         self,
         limit: int,
@@ -110,6 +114,7 @@ class UserService(BaseService):
 
         return self.repo.list(limit, offset, order_by=order_by, search=search)
 
+    @RetryFactory.service()
     def partial_update(
         self,
         *,
