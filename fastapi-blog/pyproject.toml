@@ -15,6 +15,7 @@ dependencies = [
     "svix>=1.88.0",
     "python-dotenv>=1.2.2",
     "tenacity>=9.1.4",
+    "certifi>=2026.2.25",
 ]
 
 [dependency-groups]

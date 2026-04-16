@@ -1,6 +1,6 @@
 import logging
 
-from fastapi import APIRouter, Depends, Request, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, Response, status
 from svix.webhooks import Webhook, WebhookVerificationError
 
 from src.app.core.config import settings
@@ -18,6 +18,7 @@ router = APIRouter(prefix="/webhooks", tags=["Webhooks"])
 async def clerk_webhook(
     request: Request,
     response: Response,
+    background_tasks: BackgroundTasks,
     service: UserService = Depends(get_user_service),
 ):
     """
@@ -63,8 +64,11 @@ async def clerk_webhook(
                 first_name=first_name,
                 last_name=last_name,
                 is_active=is_active,
-            )
+            ),
+            background_tasks,
         )
+
+        # service.send_welcome_email()
 
     if normalized_event_type == ClerkEventEnum.USER_UPDATED.value:
         service.update_by_webhooks(
