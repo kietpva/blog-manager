@@ -1,6 +1,15 @@
+import logging
+import smtplib
+import ssl
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+
+import certifi
+from fastapi import BackgroundTasks
 from sqlalchemy.exc import IntegrityError
 
 from src.app.core.base_service import BaseService
+from src.app.core.config import settings
 from src.app.core.constants import SortOrder
 from src.app.core.decorators.retry import RetryFactory
 from src.app.core.exceptions import (
@@ -37,9 +46,17 @@ class UserService(BaseService):
         """
         super().__init__(repo.db)
         self.repo = repo
+        self.smtp_server = settings.SMTP_HOST
+        self.port = settings.SMTP_PORT
+        self.email = settings.SMTP_FROM
+        self.password = settings.SMTP_FROM
 
     @RetryFactory.service()
-    def create(self, payload: UserCreate) -> User:
+    def create(
+        self,
+        payload: UserCreate,
+        background_tasks=BackgroundTasks,
+    ) -> User:
         """
         Create a new user in the system.
 
@@ -67,10 +84,90 @@ class UserService(BaseService):
 
         try:
             self.repo.create(user)
-            return self.commit_and_refresh(user)
+            result = self.commit_and_refresh(user)
+
+            background_tasks.add_task(
+                self.send_email,
+                to_email=user.email,
+                subject="Welcome to Blog Manager",
+                body=f"<h2>Welcome {user.email} 🎉</h2>",
+            )
+
+            return result
 
         except IntegrityError:
             raise BadRequestError(message="User already exists")
+
+    @RetryFactory.service()
+    def send_email(
+        self,
+        to_email: str,
+        subject: str,
+        body: str,
+    ):
+        """
+        Sends an email to the specified recipient.
+
+        Args:
+            to_email (str): The recipient's email address.
+            subject (str): The subject of the email.
+            body (str): The HTML body content of the email.
+
+        Raises:
+            smtplib.SMTPException: If sending the email fails.
+        """
+
+        msg = MIMEMultipart()
+        msg["From"] = self.email
+        msg["To"] = to_email
+        msg["Subject"] = subject
+
+        msg.attach(MIMEText(body, "html"))
+        context = ssl.create_default_context(cafile=certifi.where())
+
+        try:
+            if settings.SMTP_PORT == 587:
+                with smtplib.SMTP(
+                    host=settings.SMTP_HOST,
+                    port=settings.SMTP_PORT,
+                    timeout=10,
+                ) as server:
+                    server.ehlo()
+                    server.starttls(context=context)
+                    server.ehlo()
+
+                    server.login(
+                        user=settings.SMTP_USERNAME,
+                        password=settings.SMTP_PASSWORD,
+                    )
+
+                    server.sendmail(
+                        from_addr=self.email,
+                        to_addrs=to_email,
+                        msg=msg.as_string(),
+                    )
+            else:
+                with smtplib.SMTP_SSL(
+                    host=settings.SMTP_HOST,
+                    port=settings.SMTP_PORT,
+                    context=context,
+                    timeout=10,
+                ) as server:
+                    server.login(
+                        user=settings.SMTP_USERNAME,
+                        password=settings.SMTP_PASSWORD,
+                    )
+
+                    server.sendmail(
+                        from_addr=self.email,
+                        to_addrs=to_email,
+                        msg=msg.as_string(),
+                    )
+            logging.info("Email sent!")
+
+        except smtplib.SMTPException:
+            logging.exception("Failed to send email")
+            raise
 
     @RetryFactory.service()
     def get_by_id(self, user_id: str) -> User:

@@ -1,5 +1,6 @@
 import logging
 import random
+import smtplib
 
 import requests
 from sqlalchemy.exc import OperationalError
@@ -90,7 +91,13 @@ class RetryFactory:
         Returns:
             function: A tenacity retry decorator.
         """
-        return build_retry(exception_types=requests.exceptions.RequestException)
+        return build_retry(
+            exception_types=(
+                requests.exceptions.RequestException,
+                smtplib.SMTPException,
+                TimeoutError,
+            )
+        )
 
     @staticmethod
     def repository():

@@ -10,6 +10,11 @@ class Settings(BaseSettings):
     CLERK_JWKS_URL: str
     CLERK_WEBHOOK_SECRET: str
     DEBUG: bool = Field(default=False)
+    SMTP_HOST: str
+    SMTP_PORT: int
+    SMTP_USERNAME: str
+    SMTP_PASSWORD: str
+    SMTP_FROM: str
 
     model_config = ConfigDict(
         env_file=".env",
