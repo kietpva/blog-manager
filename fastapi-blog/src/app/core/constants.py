@@ -1,4 +1,6 @@
 from enum import IntEnum, StrEnum
+from typing import NamedTuple
+from uuid import UUID
 
 MAX_ITEMS_PER_PAGE: int = 100
 
@@ -38,3 +40,16 @@ class ClerkEventEnum(StrEnum):
 class SortOrder(StrEnum):
     NEWEST = "newest"
     OLDEST = "oldest"
+
+
+class NotificationType(StrEnum):
+    DAILY_REPORT = "daily_report"
+
+
+class NotificationRecipient(NamedTuple):
+    user_id: UUID
+    ws_user_id: str
+
+
+class WSEvent(StrEnum):
+    NOTIFICATION_CREATED = "notification_created"

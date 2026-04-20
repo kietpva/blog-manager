@@ -7,6 +7,7 @@ from pyngrok import ngrok
 from src.app.core.exceptions import register_exception_handlers
 from src.app.core.logging import logging_middleware, setup_logging
 from src.app.core.middleware.auth_middleware import register_auth_middleware
+from src.app.core.scheduler import start_scheduler, stop_scheduler
 from src.app.db.init_db import init_db
 from src.app.routers import register_routers_api_v1
 
@@ -16,7 +17,9 @@ async def lifespan(app: FastAPI):
     init_db()
     public_url = ngrok.connect(8000, bind_tls=True).public_url
     logging.info(f"Public URL: {public_url}")
+    start_scheduler()
     yield
+    stop_scheduler()
 
 
 app = FastAPI(
