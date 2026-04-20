@@ -47,6 +47,20 @@ class BaseService:
         self.db.refresh(entity)
         return entity
 
+    def flush(self, entity):
+        """
+        Flush the current session to the database and return the entity.
+
+        Args:
+            entity: The model instance to be flushed.
+
+        Returns:
+            The entity instance after the session has been flushed.
+        """
+
+        self.db.flush()
+        return entity
+
     def commit_and_refresh(self, entity):
         """
         Commit the current transaction, then refresh and return the entity.
