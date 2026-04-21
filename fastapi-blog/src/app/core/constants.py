@@ -44,6 +44,7 @@ class SortOrder(StrEnum):
 
 class NotificationType(StrEnum):
     DAILY_REPORT = "daily_report"
+    FOLLOW = "follow"
 
 
 class NotificationRecipient(NamedTuple):

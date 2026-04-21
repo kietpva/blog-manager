@@ -3,6 +3,8 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from src.app.db.session import SessionLocal
 from src.app.modules.notifications.repository import NotificationRepository
 from src.app.modules.notifications.service import NotificationService
+from src.app.modules.posts.repositories import PostRepository
+from src.app.modules.users.repositories import UserRepository
 
 scheduler = BackgroundScheduler(timezone="Asia/Ho_Chi_Minh")
 
@@ -18,7 +20,12 @@ def job():
     """
     db = SessionLocal()
     try:
-        NotificationService(NotificationRepository(db)).create_daily_report()
+        service = NotificationService(
+            repo=NotificationRepository(db),
+            post_repo=PostRepository(db),
+            user_repo=UserRepository(db),
+        )
+        service.create_daily_report()
     finally:
         db.close()
 
@@ -31,7 +38,7 @@ def start_scheduler():
     using a cron trigger. Ensures the scheduler is started only once.
     """
     if not scheduler.running:
-        scheduler.add_job(job, "cron", hour=16, minute=39)
+        scheduler.add_job(job, "cron", hour=13, minute=45)
         scheduler.start()
 
 
