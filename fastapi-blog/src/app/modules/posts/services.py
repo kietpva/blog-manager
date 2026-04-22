@@ -34,13 +34,13 @@ class PostService(BaseService):
         self.repo = repo
 
     @RetryFactory.service()
-    def create(self, payload: PostCreate, author_id: UUID) -> Post:
+    def create(self, payload: PostCreate, author: UUID) -> Post:
         """
         Create a new post with the given payload and author ID.
 
         Args:
             payload (PostCreate): Data required to create a post.
-            author_id (UUID): The ID of the user authoring the post.
+            author (UUID): The ID of the user authoring the post.
 
         Returns:
             Post: The newly created post instance.
@@ -52,7 +52,7 @@ class PostService(BaseService):
 
             post = Post(
                 **payload.model_dump(exclude={"category_ids"}),
-                author_id=author_id,
+                author=author,
                 categories=categories,
             )
 
@@ -134,7 +134,7 @@ class PostService(BaseService):
 
         post = self.get_by_id(post_id)
 
-        check_permission(current_user=current_user, owner_id=post.author_id)
+        check_permission(current_user=current_user, owner_id=post.author)
 
         data = payload.model_dump(exclude_unset=True)
         category_ids = data.pop("category_ids", None)
@@ -163,7 +163,7 @@ class PostService(BaseService):
         """
         post = self.get_by_id(post_id)
 
-        check_permission(current_user=current_user, owner_id=post.author_id)
+        check_permission(current_user=current_user, owner_id=post.author)
 
         self.repo.delete(post)
         self.commit()

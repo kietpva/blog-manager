@@ -51,7 +51,7 @@ class Post(BaseModel):
         id (uuid.UUID): The unique identifier for the post, from BaseModel.
         title (str): The title of the post.
         content (str): The textual content of the post.
-        author_id (uuid.UUID): The UUID of the user who authored the post.
+        author (uuid.UUID): The UUID of the user who authored the post.
         categories (list[Category]): List of categories associated via many-to-many relation.
         created_at (datetime): Timestamp when the post was created, from BaseModel.
         updated_at (datetime): Timestamp when the post was last updated, from BaseModel.
@@ -61,7 +61,7 @@ class Post(BaseModel):
     title: Mapped[str] = mapped_column(String(255))
     content: Mapped[str] = mapped_column(Text)
 
-    author_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
+    author: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"))
     categories: Mapped[list["Category"]] = relationship(
         "Category",
         secondary="post_categories",

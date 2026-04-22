@@ -584,7 +584,7 @@ POST /posts
     "id": "uuid",
     "title": "FastAPI Tutorial",
     "content": "Learn FastAPI step by step",
-    "author_id": "uuid",
+    "author": "uuid",
     "created_at": "2026-03-12T10:00:00"
   }
 }
