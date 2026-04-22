@@ -5,6 +5,22 @@ from src.app.db.base import BaseModel
 
 
 class Notification(BaseModel):
+    """
+    Notification SQLAlchemy model.
+
+    Represents a notification sent to a user.
+
+    Attributes:
+        id (uuid.UUID): Primary key, unique identifier (from BaseModel).
+        created_at (datetime): Timestamp for when the notification was created (from BaseModel).
+        updated_at (datetime): Timestamp for when the notification was last updated (from BaseModel)
+        user_id (uuid.UUID): Foreign key referencing the notified user.
+        title (str): Short title or heading of the notification.
+        content (str): Detailed notification message.
+        type (str): Type or category of notification (e.g., "follow", "comment").
+        is_read (bool): Whether the user has read the notification.
+    """
+
     __tablename__ = "notifications"
 
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)

@@ -62,6 +62,7 @@ class BaseRepository(Generic[ModelType, IdType]):
         *,
         order_by: SortOrder | None = None,
         options: list[Any] | None = None,
+        filters: list[Any] | None = None,
         search: str | None = None,
     ) -> tuple[PaginationInfo, list[ModelType]]:
         """
@@ -72,6 +73,7 @@ class BaseRepository(Generic[ModelType, IdType]):
         """
 
         query = self._build_base_query(options)
+        query = self._apply_filters(query, filters)
         query = self._apply_search(query, search)
         query = self._apply_sorting(query, order_by)
 
@@ -89,6 +91,44 @@ class BaseRepository(Generic[ModelType, IdType]):
         )
 
         return pagination, items
+
+    @RetryFactory.repository()
+    def count(
+        self,
+        *,
+        filters: list[Any] | None = None,
+        search: str | None = None,
+    ) -> int:
+        """
+        Count entities matching optional filters and search criteria.
+
+        Args:
+            filters (list[Any] | None): Optional SQLAlchemy boolean expressions.
+            search (str | None): Optional keyword for search_fields filtering.
+
+        Returns:
+            int: Total number of matched entities.
+        """
+        query = self._build_base_query(options=None)
+        query = self._apply_filters(query, filters)
+        query = self._apply_search(query, search)
+        return query.count()
+
+    def _apply_filters(self, query, filters: list[Any] | None):
+        """
+        Apply dynamic SQLAlchemy filter conditions to the query.
+
+        Args:
+            query: SQLAlchemy query object to filter.
+            filters (list[Any] | None): List of SQLAlchemy boolean expressions.
+
+        Returns:
+            Query: The filtered query if filters are provided, otherwise original query.
+        """
+        if not filters:
+            return query
+
+        return query.filter(*filters)
 
     def _apply_search(self, query, search: str | None):
         """

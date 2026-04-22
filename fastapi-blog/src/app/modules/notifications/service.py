@@ -13,14 +13,22 @@ from src.app.core.websocket_manager import manager
 from src.app.modules.notifications.models import Notification
 from src.app.modules.notifications.repository import NotificationRepository
 from src.app.modules.notifications.schemas import NotificationWS, WSMessage
-from src.app.modules.posts.models import Post
+from src.app.modules.posts.repositories import PostRepository
 from src.app.modules.users.models import User
+from src.app.modules.users.repositories import UserRepository
 
 
 class NotificationService(BaseService):
-    def __init__(self, repo: NotificationRepository):
+    def __init__(
+        self,
+        repo: NotificationRepository,
+        post_repo: PostRepository,
+        user_repo: UserRepository,
+    ):
         super().__init__(repo.db)
         self.repo = repo
+        self.post_repo = post_repo
+        self.user_repo = user_repo
 
     def create_daily_report(self):
         """
@@ -35,13 +43,16 @@ class NotificationService(BaseService):
         start = datetime.combine(today, datetime.min.time())
         end = datetime.combine(today, datetime.max.time())
 
-        total_posts = (
-            self.db.query(Post)
-            .filter(Post.created_at >= start, Post.created_at <= end)
-            .count()
+        total_posts = self.post_repo.count(
+            filters=[
+                self.post_repo.model.created_at >= start,
+                self.post_repo.model.created_at <= end,
+            ]
         )
 
-        admins = self.db.query(User).filter(User.role == UserRole.ADMIN.value).all()
+        _, admins = self.user_repo.list(
+            filters=[self.user_repo.model.role == UserRole.ADMIN.value]
+        )
 
         recipients = [
             NotificationRecipient(
@@ -58,7 +69,21 @@ class NotificationService(BaseService):
             type_=NotificationType.DAILY_REPORT,
         )
 
-        self.db.commit()
+        self.commit()
+
+    def get_by_user(self, user_id: str, limit: int, offset: int):
+        """
+        Retrieve paginated notifications for a specific user.
+
+        Args:
+            user_id (str): The identifier of the user.
+            limit (int): Maximum number of notifications to return.
+            offset (int): Number of notifications to skip.
+
+        Returns:
+            list[Notification]: Notification list sorted by newest first.
+        """
+        return self.repo.get_by_user(user_id, limit, offset)
 
     def _create_and_push(
         self,
@@ -103,7 +128,8 @@ class NotificationService(BaseService):
             self.repo.create(notification)
             notifications.append((notification, recipient.ws_user_id))
 
-        self.db.flush()
+        if notifications:
+            self.flush(notifications)
 
         ws_payloads: list[tuple[str, dict]] = []
 
@@ -139,3 +165,25 @@ class NotificationService(BaseService):
                 for ws_user_id, message in payloads
             ]
         )
+
+    def create_follow_notification(
+        self,
+        follower: User,
+        following: User,
+    ):
+
+        recipients = [
+            NotificationRecipient(
+                user_id=following.id,
+                ws_user_id=following.auth_id,
+            )
+        ]
+
+        self._create_and_push(
+            recipients=recipients,
+            title="New follower",
+            content=f"{follower.first_name} {follower.last_name} started following you",
+            type_=NotificationType.FOLLOW,
+        )
+
+        self.commit()
