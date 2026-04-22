@@ -7,7 +7,6 @@ from src.app.core.exceptions import BadRequestError
 from src.app.modules.follows.model import Follow
 from src.app.modules.follows.repository import FollowRepository
 from src.app.modules.notifications.service import NotificationService
-from src.app.modules.users.models import User
 
 
 class FollowService(BaseService):
@@ -22,13 +21,9 @@ class FollowService(BaseService):
         if follower_id == following_id:
             raise BadRequestError(message="Cannot follow yourself")
 
-        existing_follow = (
-            self.db.query(Follow)
-            .filter(
-                Follow.follower_id == follower_id,
-                Follow.following_id == following_id,
-            )
-            .one_or_none()
+        existing_follow = self.repo.get_by_follower_and_following(
+            follower_id=follower_id,
+            following_id=following_id,
         )
         if existing_follow:
             raise BadRequestError(message="Already following this user")
@@ -39,10 +34,8 @@ class FollowService(BaseService):
             self.repo.create(follow)
             result = self.commit_and_refresh(follow)
 
-            follower = self.db.query(User).filter(User.id == follower_id).one_or_none()
-            following = (
-                self.db.query(User).filter(User.id == following_id).one_or_none()
-            )
+            follower = self.repo.get_user_by_id(follower_id)
+            following = self.repo.get_user_by_id(following_id)
             if follower and following:
                 self.notification_service.create_follow_notification(
                     follower=follower,

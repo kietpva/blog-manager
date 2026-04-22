@@ -1,9 +1,8 @@
-import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from pyngrok import ngrok
 
+from src.app.core.config import settings
 from src.app.core.exceptions import register_exception_handlers
 from src.app.core.logging import logging_middleware, setup_logging
 from src.app.core.middleware.auth_middleware import register_auth_middleware
@@ -14,9 +13,24 @@ from src.app.routers import register_routers_api_v1
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """
+    Lifespan context manager for FastAPI application.
+    Handles application startup and shutdown events such as database initialization,
+    scheduler startup/shutdown, and (in debug mode) ngrok public URL exposure.
+    """
     init_db()
-    public_url = ngrok.connect(8000, bind_tls=True).public_url
-    logging.info(f"Public URL: {public_url}")
+    if settings.DEBUG:
+        """
+        If the application is running in DEBUG mode,
+        expose a public URL using ngrok for easier testing and development.
+        """
+
+        import logging
+
+        from pyngrok import ngrok
+
+        public_url = ngrok.connect(8000, bind_tls=True).public_url
+        logging.info(f"Public URL: {public_url}")
     start_scheduler()
     yield
     stop_scheduler()

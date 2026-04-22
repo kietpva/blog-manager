@@ -31,7 +31,15 @@ async def clerk_webhook(
         wh = Webhook(settings.CLERK_WEBHOOK_SECRET)
         event = wh.verify(payload, headers)
     except WebhookVerificationError as e:
-        logging.info("❌ Webhook verify failed:", str(e))
+        logging.warning(
+            "Webhook verify failed: %s",
+            e,
+            extra={
+                "svix_id": headers.get("svix-id"),
+                "svix_timestamp": headers.get("svix-timestamp"),
+                "svix_signature_present": bool(headers.get("svix-signature")),
+            },
+        )
         response.status_code = status.HTTP_400_BAD_REQUEST
         return
 
@@ -48,7 +56,6 @@ async def clerk_webhook(
     email = emails[0].get("email_address")
     first_name = data.get("first_name") or ""
     last_name = data.get("last_name") or ""
-    is_active = data.get("banned") or False
 
     # Clerk may provide `event["type"]` either as a string (e.g. "user.created")
     # or as an Enum member depending on the caller/test.
@@ -63,12 +70,9 @@ async def clerk_webhook(
                 email=email,
                 first_name=first_name,
                 last_name=last_name,
-                is_active=is_active,
             ),
             background_tasks,
         )
-
-        # service.send_welcome_email()
 
     if normalized_event_type == ClerkEventEnum.USER_UPDATED.value:
         service.update_by_webhooks(
@@ -76,7 +80,6 @@ async def clerk_webhook(
             UserUpdateByWebhooks(
                 first_name=first_name,
                 last_name=last_name,
-                is_active=not is_active,
             ),
         )
 

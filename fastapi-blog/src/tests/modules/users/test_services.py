@@ -117,14 +117,16 @@ def test_create_calls_repo_with_new_user(
     """
     repo.get_by_auth_id.return_value = None
     repo.create.side_effect = lambda user: user
+    background_tasks = Mock()
 
-    result = service.create(create_payload)
+    result = service.create(create_payload, background_tasks=background_tasks)
 
     assert result.auth_id == create_payload.auth_id
     assert result.email == create_payload.email
     assert result.first_name == create_payload.first_name
     assert result.last_name == create_payload.last_name
     repo.create.assert_called_once()
+    background_tasks.add_task.assert_called_once()
 
 
 def test_create_raises_bad_request_when_integrity_error(

@@ -1,19 +1,29 @@
-import os
 from logging.config import fileConfig
+from pathlib import Path
 
 from alembic import context
 from dotenv import load_dotenv
 from sqlalchemy import engine_from_config, pool
 
+from src.app.core.config import settings
 from src.app.db.base import Base
 
-load_dotenv()
+load_dotenv(dotenv_path=Path(__file__).resolve().parents[2] / ".env")
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
-DATABASE_URL = os.getenv("DATABASE_URL")
-config.set_main_option("sqlalchemy.url", DATABASE_URL)
+if settings.ENV == "local":
+    config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+else:
+    database_url = settings.DATABASE_URL
+    if not database_url:
+        raise RuntimeError(
+            "Missing database URL. Set ALEMBIC_DATABASE_URL (recommended for Supabase) "
+            "or DATABASE_URL in your environment/.env."
+        )
+    # Alembic configparser treats "%" as interpolation marker, so escape it in URLs.
+    config.set_main_option("sqlalchemy.url", database_url.replace("%", "%%"))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

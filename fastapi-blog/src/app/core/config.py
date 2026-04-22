@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     CLERK_JWKS_URL: str
     CLERK_WEBHOOK_SECRET: str
     DEBUG: bool = Field(default=False)
+    ENV: str = Field(default="local")
     SMTP_HOST: str
     SMTP_PORT: int
     SMTP_USERNAME: str
