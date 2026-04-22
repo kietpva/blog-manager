@@ -44,7 +44,7 @@ class PostResponse(BaseModel):
         id (UUID): Unique identifier of the post.
         title (str): Title of the post.
         content (str): Main body content of the post.
-        author_id (UUID): Unique identifier of the author.
+        author (UUID): Unique identifier of the author.
         created_at (datetime): Timestamp when the post was created.
         categories (list[CategoryResponse]): List of categories associated with the post.
     """
@@ -52,7 +52,7 @@ class PostResponse(BaseModel):
     id: UUID
     title: str
     content: str
-    author_id: UUID
+    author: UUID
     created_at: datetime
     categories: list[CategoryResponse]
 

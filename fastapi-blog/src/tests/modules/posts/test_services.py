@@ -57,19 +57,19 @@ def make_category(name: str = "cat") -> Category:
     return Category(name=name)
 
 
-def make_post(author_id: UUID, title: str = "t", content: str = "c") -> Post:
+def make_post(author: UUID, title: str = "t", content: str = "c") -> Post:
     """
-    Helper function to create a Post object with the given author_id, title, and content.
+    Helper function to create a Post object with the given author, title, and content.
 
     Args:
-        author_id (UUID): The UUID of the author.
+        author (UUID): The UUID of the author.
         title (str, optional): The title of the post. Defaults to "t".
         content (str, optional): The content of the post. Defaults to "c".
 
     Returns:
         Post: A Post instance with the specified attributes.
     """
-    return Post(title=title, content=content, author_id=author_id)
+    return Post(title=title, content=content, author=author)
 
 
 def test_create_raises_not_found_when_categories_missing(
@@ -82,7 +82,7 @@ def test_create_raises_not_found_when_categories_missing(
     the service raises the expected exception
     and that the repository's create method is not invoked.
     """
-    author_id = uuid4()
+    author = uuid4()
     cat_ids = [uuid4(), uuid4()]
 
     repo.get_categories_by_ids.return_value = [make_category("cat_1")]
@@ -90,7 +90,7 @@ def test_create_raises_not_found_when_categories_missing(
     payload = PostCreate(title="Post", content="Content", category_ids=cat_ids)
 
     with pytest.raises(NotFoundError) as exc_info:
-        service.create(payload, author_id=author_id)
+        service.create(payload, author=author)
 
     assert exc_info.value.message == "One or more categories not found"
     repo.get_categories_by_ids.assert_called_once_with(cat_ids)
@@ -107,7 +107,7 @@ def test_create_calls_repo_create_with_constructed_post(
     given in the payload and repository,
     and that the appropriate repository methods are called.
     """
-    author_id = uuid4()
+    author = uuid4()
     cat_ids = [uuid4(), uuid4()]
     categories = [make_category("cat_1"), make_category("cat_2")]
 
@@ -115,11 +115,11 @@ def test_create_calls_repo_create_with_constructed_post(
     repo.create.side_effect = lambda post: post
 
     payload = PostCreate(title="Post", content="Content", category_ids=cat_ids)
-    result = service.create(payload, author_id=author_id)
+    result = service.create(payload, author=author)
 
     assert result.title == payload.title
     assert result.content == payload.content
-    assert result.author_id == author_id
+    assert result.author == author
     assert result.categories == categories
 
     repo.get_categories_by_ids.assert_called_once_with(cat_ids)
@@ -149,8 +149,8 @@ def test_get_by_id_returns_post_when_found(service: PostService, repo: Mock):
     Asserts the repository method is called and the found post is returned.
     """
     post_id = uuid4()
-    author_id = uuid4()
-    post = make_post(author_id=author_id)
+    author = uuid4()
+    post = make_post(author=author)
     repo.get_by_id.return_value = post
 
     result = service.get_by_id(post_id)
@@ -166,7 +166,7 @@ def test_list_returns_pagination_and_items(service: PostService, repo: Mock):
     Asserts that the result matches the repository's return values, and correct arguments are used.
     """
     page = PaginationInfo(total=1, limit=10, offset=0, has_next=False, has_prev=False)
-    items = [make_post(author_id=uuid4())]
+    items = [make_post(author=uuid4())]
     repo.list.return_value = (page, items)
 
     result_page, result_items = service.list(
@@ -193,8 +193,8 @@ def test_partial_update_updates_title_and_categories(
       - The updated post object is returned.
     """
     post_id = uuid4()
-    author_id = uuid4()
-    post = make_post(author_id=author_id, title="Old", content="Old content")
+    author = uuid4()
+    post = make_post(author=author, title="Old", content="Old content")
     repo.get_by_id.return_value = post
     current_user = SimpleNamespace(id=uuid4())
     cat_ids = [uuid4(), uuid4()]
@@ -220,7 +220,7 @@ def test_partial_update_updates_title_and_categories(
     )
 
     check_permission_mock.assert_called_once_with(
-        current_user=current_user, owner_id=author_id
+        current_user=current_user, owner_id=author
     )
     repo.get_categories_by_ids.assert_called_once_with(cat_ids)
     assert post.categories == categories
@@ -241,8 +241,8 @@ def test_partial_update_raises_not_found_when_categories_missing(
     Ensures permission is checked first, categories are fetched, and no update occurs if not found.
     """
     post_id = uuid4()
-    author_id = uuid4()
-    post = make_post(author_id=author_id)
+    author = uuid4()
+    post = make_post(author=author)
     repo.get_by_id.return_value = post
 
     current_user = SimpleNamespace(id=uuid4())
@@ -262,7 +262,7 @@ def test_partial_update_raises_not_found_when_categories_missing(
 
     assert exc_info.value.message == "One or more categories not found"
     check_permission_mock.assert_called_once_with(
-        current_user=current_user, owner_id=author_id
+        current_user=current_user, owner_id=author
     )
     repo.get_categories_by_ids.assert_called_once_with(cat_ids)
     repo.db.commit.assert_not_called()
@@ -312,8 +312,8 @@ def test_partial_update_without_category_ids_does_not_fetch_categories(
       - the returned object is the post instance
     """
     post_id = uuid4()
-    author_id = uuid4()
-    post = make_post(author_id=author_id)
+    author = uuid4()
+    post = make_post(author=author)
     repo.get_by_id.return_value = post
     current_user = SimpleNamespace(id=uuid4())
 
@@ -335,7 +335,7 @@ def test_partial_update_without_category_ids_does_not_fetch_categories(
     )
 
     check_permission_mock.assert_called_once_with(
-        current_user=current_user, owner_id=author_id
+        current_user=current_user, owner_id=author
     )
     repo.get_categories_by_ids.assert_not_called()
     apply_partial_update_mock.assert_called_once_with(instance=post, data=expected_data)
@@ -358,7 +358,7 @@ def test_delete_calls_repo_delete_and_permission(
     """
     post_id = uuid4()
     owner_id = uuid4()
-    post = make_post(author_id=owner_id)
+    post = make_post(author=owner_id)
     repo.get_by_id.return_value = post
 
     current_user = SimpleNamespace(id=uuid4())

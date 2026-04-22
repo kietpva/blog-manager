@@ -15,13 +15,13 @@ from src.app.modules.users.models import UserRole
 from src.app.utils.pagination import PaginationInfo
 
 
-def _post_read_obj(post_id, author_id, title="Title", content="Content"):
+def _post_read_obj(post_id, author, title="Title", content="Content"):
     """
     Create a SimpleNamespace representing the API response for a post.
 
     Args:
         post_id: The UUID of the post.
-        author_id: The UUID of the post's author.
+        author: The UUID of the post's author.
         title (str, optional): The title of the post. Defaults to "Title".
         content (str, optional): The content/body of the post. Defaults to "Content".
 
@@ -32,7 +32,7 @@ def _post_read_obj(post_id, author_id, title="Title", content="Content"):
         id=post_id,
         title=title,
         content=content,
-        author_id=author_id,
+        author=author,
         created_at=datetime.now(UTC),
         categories=[],
     )
@@ -66,8 +66,8 @@ def test_get_by_id_returns_post():
     """
     service = Mock()
     post_id = uuid4()
-    author_id = uuid4()
-    service.get_by_id.return_value = _post_read_obj(post_id, author_id)
+    author = uuid4()
+    service.get_by_id.return_value = _post_read_obj(post_id, author)
 
     client, _ = _build_client(service)
     response = client.get(f"/posts/{post_id}")
@@ -75,7 +75,7 @@ def test_get_by_id_returns_post():
     assert response.status_code == 200
     body = response.json()
     assert body["data"]["id"] == str(post_id)
-    assert body["data"]["author_id"] == str(author_id)
+    assert body["data"]["author"] == str(author)
     service.get_by_id.assert_called_once_with(post_id)
 
 
@@ -102,10 +102,10 @@ def test_list_returns_paginated_posts():
     """
     service = Mock()
     post_id = uuid4()
-    author_id = uuid4()
+    author = uuid4()
 
     page = PaginationInfo(total=1, limit=10, offset=0, has_next=False, has_prev=False)
-    service.list.return_value = (page, [_post_read_obj(post_id, author_id)])
+    service.list.return_value = (page, [_post_read_obj(post_id, author)])
 
     client, _ = _build_client(service)
     response = client.get("/posts?limit=10&offset=0")
@@ -128,7 +128,7 @@ def test_create_calls_service_and_returns_post():
 
     client, me = _build_client(service)
     service.create.return_value = _post_read_obj(
-        post_id, author_id=me.id, title=payload["title"]
+        post_id, author=me.id, title=payload["title"]
     )
 
     response = client.post("/posts", json=payload)
@@ -136,11 +136,11 @@ def test_create_calls_service_and_returns_post():
     assert response.status_code == 200
     body = response.json()
     assert body["data"]["id"] == str(post_id)
-    assert body["data"]["author_id"] == str(me.id)
+    assert body["data"]["author"] == str(me.id)
 
     assert service.create.call_count == 1
-    post_create_model, passed_author_id = service.create.call_args.args
-    assert passed_author_id == me.id
+    post_create_model, passed_author = service.create.call_args.args
+    assert passed_author == me.id
     assert post_create_model.model_dump() == payload
 
 
@@ -150,11 +150,11 @@ def test_partial_update_calls_service_and_returns_post():
     """
     service = Mock()
     post_id = uuid4()
-    author_id = uuid4()
+    author = uuid4()
 
     client, me = _build_client(service)
     service.partial_update.return_value = _post_read_obj(
-        post_id, author_id=author_id, title="Updated title"
+        post_id, author=author, title="Updated title"
     )
 
     response = client.patch(f"/posts/{post_id}", json={"title": "Updated title"})
